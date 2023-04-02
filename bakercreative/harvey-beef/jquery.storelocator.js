@@ -1,8 +1,8 @@
 /*! jQuery Google Maps Store Locator - v3.1.10 - 2023-02-19
-* http://www.bjornblog.com/web/jquery-store-locator-plugin
-* Copyright (c) 2023 Bjorn Holine; Licensed MIT */
+ * http://www.bjornblog.com/web/jquery-store-locator-plugin
+ * Copyright (c) 2023 Bjorn Holine; Licensed MIT */
 
-;(function ($, window, document, undefined) {
+(function ($, window, document, undefined) {
 	'use strict';
 
 	var pluginName = 'storeLocator';
@@ -13,134 +13,160 @@
 	}
 
 	// Variables used across multiple methods
-	var $this, map, listTemplate, infowindowTemplate, dataTypeRead, originalOrigin, originalData, originalZoom, dataRequest, searchInput, addressInput, olat, olng, storeNum, directionsDisplay, directionsService, prevSelectedMarkerBefore, prevSelectedMarkerAfter, firstRun, reload, nameAttrs;
-	var featuredset = [], locationset = [], normalset = [], markers = [];
-	var filters = {}, locationData = {}, GeoCodeCalc = {}, mappingObj = {};
+	var $this,
+		map,
+		listTemplate,
+		infowindowTemplate,
+		dataTypeRead,
+		originalOrigin,
+		originalData,
+		originalZoom,
+		dataRequest,
+		searchInput,
+		addressInput,
+		olat,
+		olng,
+		storeNum,
+		directionsDisplay,
+		directionsService,
+		prevSelectedMarkerBefore,
+		prevSelectedMarkerAfter,
+		firstRun,
+		reload,
+		nameAttrs;
+	var featuredset = [],
+		locationset = [],
+		normalset = [],
+		markers = [];
+	var filters = {},
+		locationData = {},
+		GeoCodeCalc = {},
+		mappingObj = {};
 
-    // Create the defaults once. DO NOT change these settings in this file - settings should be overridden in the plugin call
-    var defaults = {
-        'ajaxData'                   : null,
-        'altDistanceNoResult'        : false,
-        'autoComplete'               : false,
-        'autoCompleteDisableListener': false,
-        'autoCompleteOptions'        : {},
-        'autoGeocode'                : false,
-        'bounceMarker'               : true, // Deprecated.
-        'catMarkers'                 : null,
-        'dataLocation'               : 'data/locations.json',
-        'dataRaw'                    : null,
-        'dataType'                   : 'json',
-        'debug'                      : false,
-        'defaultLat'                 : null,
-        'defaultLng'                 : null,
-        'defaultLoc'                 : false,
-        'disableAlphaMarkers'        : false,
-        'distanceAlert'              : 60,
-        'dragSearch'                 : false,
-        'exclusiveFiltering'         : false,
-        'exclusiveTax'               : null,
-        'featuredDistance'           : null,
-        'featuredLocations'          : false,
-        'fullMapStart'               : false,
-        'fullMapStartBlank'          : false,
-        'fullMapStartListLimit'      : false,
-        'infoBubble'                 : null,
-        'inlineDirections'           : false,
-        'lengthUnit'                 : 'm',
-        'listColor1'                 : '#ffffff',
-        'listColor2'                 : '#eeeeee',
-        'loading'                    : false,
-        'locationsPerPage'           : 10,
-        'mapSettings'                : {
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
-            zoom     : 12
-        },
-        'markerCluster'              : null,
-        'markerImg'                  : null,
-        'markerDim'                  : null,
-        'maxDistance'                : false,
-        'modal'                      : false,
-        'nameAttribute'              : 'name',
-        'nameSearch'                 : false,
-        'noForm'                     : false,
-        'openNearest'                : false,
-        'originMarker'               : false,
-        'originMarkerDim'            : null,
-        'originMarkerImg'            : null,
-        'pagination'                 : false,
-        'querystringParams'          : false,
-        'selectedMarkerImg'          : null,
-        'selectedMarkerImgDim'       : null,
-        'sessionStorage'             : false,
-        'slideMap'                   : true,
-        'sortBy'                     : null,
-        'storeLimit'                 : 26,
-        'taxonomyFilters'            : null,
-        'visibleMarkersList'         : false,
-        'xmlElement'                 : 'marker',
-        // HTML elements
-        'addressID'                  : 'bh-sl-address',
-        'closeIcon'                  : 'bh-sl-close-icon',
-        'formContainer'              : 'bh-sl-form-container',
-        'formID'                     : 'bh-sl-user-location',
-        'geocodeID'                  : null,
-        'lengthSwapID'               : 'bh-sl-length-swap',
-        'loadingContainer'           : 'bh-sl-loading',
-        'locationList'               : 'bh-sl-loc-list',
-        'mapID'                      : 'bh-sl-map',
-        'maxDistanceID'              : 'bh-sl-maxdistance',
-        'modalContent'               : 'bh-sl-modal-content',
-        'modalWindow'                : 'bh-sl-modal-window',
-        'orderID'                    : 'bh-sl-order',
-        'overlay'                    : 'bh-sl-overlay',
-        'regionID'                   : 'bh-sl-region',
-        'searchID'                   : 'bh-sl-search',
-        'sortID'                     : 'bh-sl-sort',
-        'taxonomyFiltersContainer'   : 'bh-sl-filters-container',
-        // Templates
-        'infowindowTemplatePath'     : 'assets/js/plugins/storeLocator/templates/infowindow-description.html',
-        'listTemplatePath'           : 'assets/js/plugins/storeLocator/templates/location-list-description.html',
-        'KMLinfowindowTemplatePath'  : 'assets/js/plugins/storeLocator/templates/kml-infowindow-description.html',
-        'KMLlistTemplatePath'        : 'assets/js/plugins/storeLocator/templates/kml-location-list-description.html',
-        'listTemplateID'             : null,
-        'infowindowTemplateID'       : null,
-        // Callbacks
-        'callbackAutoGeoSuccess'     : null,
-        'callbackBeforeSend'         : null,
-        'callbackCloseDirections'    : null,
-        'callbackCreateMarker'       : null,
-        'callbackDirectionsRequest'  : null,
-        'callbackFilters'            : null,
-        'callbackFormVals'           : null,
-        'callbackGeocodeRestrictions': null,
-        'callbackJsonp'              : null,
-        'callbackListClick'          : null,
-        'callbackMapSet'             : null,
-        'callbackMarkerClick'        : null,
-        'callbackModalClose'         : null,
-        'callbackModalOpen'          : null,
-        'callbackModalReady'         : null,
-        'callbackNearestLoc'         : null,
-        'callbackNoResults'          : null,
-        'callbackNotify'             : null,
-        'callbackOrder'              : null,
-        'callbackPageChange'         : null,
-        'callbackRegion'             : null,
-        'callbackSorting'            : null,
-        'callbackSuccess'            : null,
-        // Language options
-        'addressErrorAlert'          : 'Unable to find address',
-        'autoGeocodeErrorAlert'      : 'Automatic location detection failed. Please fill in your address or zip code.',
-        'distanceErrorAlert'         : 'Unfortunately, our closest location is more than ',
-        'kilometerLang'              : 'kilometer',
-        'kilometersLang'             : 'kilometers',
-        'mileLang'                   : 'mile',
-        'milesLang'                  : 'miles',
-        'noResultsTitle'             : 'No results',
-        'noResultsDesc'              : 'No locations were found with the given criteria. Please modify your selections or input.',
-        'nextPage'                   : 'Next &raquo;',
-        'prevPage'                   : '&laquo; Prev'
-    };
+	// Create the defaults once. DO NOT change these settings in this file - settings should be overridden in the plugin call
+	var defaults = {
+		ajaxData: null,
+		altDistanceNoResult: false,
+		autoComplete: false,
+		autoCompleteDisableListener: false,
+		autoCompleteOptions: {},
+		autoGeocode: false,
+		bounceMarker: true, // Deprecated.
+		catMarkers: null,
+		dataLocation: 'data/locations.json',
+		dataRaw: null,
+		dataType: 'json',
+		debug: false,
+		defaultLat: null,
+		defaultLng: null,
+		defaultLoc: false,
+		disableAlphaMarkers: false,
+		distanceAlert: 60,
+		dragSearch: false,
+		exclusiveFiltering: false,
+		exclusiveTax: null,
+		featuredDistance: null,
+		featuredLocations: false,
+		fullMapStart: false,
+		fullMapStartBlank: false,
+		fullMapStartListLimit: false,
+		infoBubble: null,
+		inlineDirections: false,
+		lengthUnit: 'm',
+		listColor1: '#ffffff',
+		listColor2: '#eeeeee',
+		loading: false,
+		locationsPerPage: 10,
+		mapSettings: {
+			mapTypeId: google.maps.MapTypeId.ROADMAP,
+			zoom: 12
+		},
+		markerCluster: null,
+		markerImg: null,
+		markerDim: null,
+		maxDistance: false,
+		modal: false,
+		nameAttribute: 'name',
+		nameSearch: false,
+		noForm: false,
+		openNearest: false,
+		originMarker: false,
+		originMarkerDim: null,
+		originMarkerImg: null,
+		pagination: false,
+		querystringParams: false,
+		selectedMarkerImg: null,
+		selectedMarkerImgDim: null,
+		sessionStorage: false,
+		slideMap: true,
+		sortBy: null,
+		storeLimit: 26,
+		taxonomyFilters: null,
+		visibleMarkersList: false,
+		xmlElement: 'marker',
+		// HTML elements
+		addressID: 'bh-sl-address',
+		closeIcon: 'bh-sl-close-icon',
+		formContainer: 'bh-sl-form-container',
+		formID: 'bh-sl-user-location',
+		geocodeID: null,
+		lengthSwapID: 'bh-sl-length-swap',
+		loadingContainer: 'bh-sl-loading',
+		locationList: 'bh-sl-loc-list',
+		mapID: 'bh-sl-map',
+		maxDistanceID: 'bh-sl-maxdistance',
+		modalContent: 'bh-sl-modal-content',
+		modalWindow: 'bh-sl-modal-window',
+		orderID: 'bh-sl-order',
+		overlay: 'bh-sl-overlay',
+		regionID: 'bh-sl-region',
+		searchID: 'bh-sl-search',
+		sortID: 'bh-sl-sort',
+		taxonomyFiltersContainer: 'bh-sl-filters-container',
+		// Templates
+		infowindowTemplatePath: 'assets/js/plugins/storeLocator/templates/infowindow-description.html',
+		listTemplatePath: 'assets/js/plugins/storeLocator/templates/location-list-description.html',
+		KMLinfowindowTemplatePath: 'assets/js/plugins/storeLocator/templates/kml-infowindow-description.html',
+		KMLlistTemplatePath: 'assets/js/plugins/storeLocator/templates/kml-location-list-description.html',
+		listTemplateID: null,
+		infowindowTemplateID: null,
+		// Callbacks
+		callbackAutoGeoSuccess: null,
+		callbackBeforeSend: null,
+		callbackCloseDirections: null,
+		callbackCreateMarker: null,
+		callbackDirectionsRequest: null,
+		callbackFilters: null,
+		callbackFormVals: null,
+		callbackGeocodeRestrictions: null,
+		callbackJsonp: null,
+		callbackListClick: null,
+		callbackMapSet: null,
+		callbackMarkerClick: null,
+		callbackModalClose: null,
+		callbackModalOpen: null,
+		callbackModalReady: null,
+		callbackNearestLoc: null,
+		callbackNoResults: null,
+		callbackNotify: null,
+		callbackOrder: null,
+		callbackPageChange: null,
+		callbackRegion: null,
+		callbackSorting: null,
+		callbackSuccess: null,
+		// Language options
+		addressErrorAlert: 'Unable to find address',
+		autoGeocodeErrorAlert: 'Automatic location detection failed. Please fill in your address or zip code.',
+		distanceErrorAlert: 'Unfortunately, our closest location is more than ',
+		kilometerLang: 'kilometer',
+		kilometersLang: 'kilometers',
+		mileLang: 'mile',
+		milesLang: 'miles',
+		noResultsTitle: 'No results',
+		noResultsDesc: 'No locations were found with the given criteria. Please modify your selections or input.',
+		nextPage: 'Next &raquo;',
+		prevPage: '&laquo; Prev'
+	};
 
 	// Plugin constructor
 	function Plugin(element, options) {
@@ -154,7 +180,6 @@
 
 	// Avoid Plugin.prototype conflicts
 	$.extend(Plugin.prototype, {
-
 		/**
 		 * Init function
 		 */
@@ -165,8 +190,7 @@
 			if (this.settings.lengthUnit === 'km') {
 				// Kilometers
 				GeoCodeCalc.EarthRadius = 6367.0;
-			}
-			else {
+			} else {
 				// Default is miles
 				GeoCodeCalc.EarthRadius = 3956.0;
 			}
@@ -174,8 +198,7 @@
 			// KML is read as XML
 			if (this.settings.dataType === 'kml') {
 				dataTypeRead = 'xml';
-			}
-			else {
+			} else {
 				dataTypeRead = this.settings.dataType;
 			}
 
@@ -188,7 +211,7 @@
 			originalZoom = this.settings.mapSettings.zoom;
 
 			// Add Handlebars helper for handling URL output
-			Handlebars.registerHelper('niceURL', function(url) {
+			Handlebars.registerHelper('niceURL', function (url) {
 				if (url) {
 					return url.replace('https://', '').replace('http://', '');
 				}
@@ -208,10 +231,14 @@
 				// Clone the filters if there are any so they can be used in the modal
 				if (this.settings.taxonomyFilters !== null) {
 					// Clone the filters
-					$('.' + this.settings.taxonomyFiltersContainer).clone(true, true).prependTo($this);
+					$('.' + this.settings.taxonomyFiltersContainer)
+						.clone(true, true)
+						.prependTo($this);
 				}
 
-				$this.wrap('<div class="' + this.settings.overlay + '"><div class="' + this.settings.modalWindow + '"><div class="' + this.settings.modalContent + '">');
+				$this.wrap(
+					'<div class="' + this.settings.overlay + '"><div class="' + this.settings.modalWindow + '"><div class="' + this.settings.modalContent + '">'
+				);
 				$('.' + this.settings.modalWindow).prepend('<div class="' + this.settings.closeIcon + '"></div>');
 				$('.' + this.settings.overlay).hide();
 			}
@@ -223,7 +250,7 @@
 
 				// Add listener when autoComplete selection changes.
 				if (this.settings.autoComplete === true && this.settings.autoCompleteDisableListener !== true) {
-					autoPlaces.addListener('place_changed', function(e) {
+					autoPlaces.addListener('place_changed', function (e) {
 						_this.processForm(e);
 					});
 				}
@@ -246,7 +273,7 @@
 
 			// Remove marker event listeners
 			if (markers.length) {
-				for(var i = 0; i <= markers.length; i++) {
+				for (var i = 0; i <= markers.length; i++) {
 					google.maps.event.removeListener(markers[i]);
 				}
 			}
@@ -286,16 +313,16 @@
 			normalset = [];
 			markers = [];
 			firstRun = false;
-			$(document).off('click.'+pluginName, '.' + this.settings.locationList + ' li');
+			$(document).off('click.' + pluginName, '.' + this.settings.locationList + ' li');
 
-			if ( $('.' + this.settings.locationList + ' .bh-sl-close-directions-container').length ) {
+			if ($('.' + this.settings.locationList + ' .bh-sl-close-directions-container').length) {
 				$('.bh-sl-close-directions-container').remove();
 			}
 
 			if (this.settings.inlineDirections === true) {
 				// Remove directions panel if it's there
 				var $adp = $('.' + this.settings.locationList + ' .adp');
-				if ( $adp.length > 0 ) {
+				if ($adp.length > 0) {
 					$adp.remove();
 					$('.' + this.settings.locationList + ' ul').fadeIn();
 				}
@@ -303,7 +330,7 @@
 			}
 
 			if (this.settings.pagination === true) {
-				$(document).off('click.'+pluginName, '.bh-sl-pagination li');
+				$(document).off('click.' + pluginName, '.bh-sl-pagination li');
 			}
 		},
 
@@ -319,20 +346,20 @@
 			var $inputs = $('.' + this.settings.taxonomyFiltersContainer + ' input'),
 				$selects = $('.' + this.settings.taxonomyFiltersContainer + ' select');
 
-			if ( typeof($inputs) !== 'object') {
+			if (typeof $inputs !== 'object') {
 				return;
 			}
 
 			// Loop over the input fields
-			$inputs.each(function() {
+			$inputs.each(function () {
 				if ($(this).is('input[type="checkbox"]') || $(this).is('input[type="radio"]')) {
-					$(this).prop('checked',false);
+					$(this).prop('checked', false);
 				}
 			});
 
 			// Loop over select fields
-			$selects.each(function() {
-				$(this).prop('selectedIndex',0);
+			$selects.each(function () {
+				$(this).prop('selectedIndex', 0);
 			});
 		},
 
@@ -340,21 +367,20 @@
 		 * Reload everything
 		 * This method does a reset of everything and reloads the map as it would first appear.
 		 */
-		mapReload: function() {
+		mapReload: function () {
 			this.writeDebug('mapReload');
 			this.reset();
 			reload = true;
 
-			if ( this.settings.taxonomyFilters !== null ) {
+			if (this.settings.taxonomyFilters !== null) {
 				this.formFiltersReset();
 				this.taxonomyFiltersInit();
 			}
 
-			if ((olat) && (olng)) {
+			if (olat && olng) {
 				this.settings.mapSettings.zoom = originalZoom;
 				this.processForm();
-			}
-			else {
+			} else {
 				this.mapping(mappingObj);
 			}
 		},
@@ -366,11 +392,10 @@
 		 * @param notifyText {string} the notification message
 		 */
 		notify: function (notifyText) {
-			this.writeDebug('notify',notifyText);
+			this.writeDebug('notify', notifyText);
 			if (this.settings.callbackNotify) {
 				this.settings.callbackNotify.call(this, notifyText);
-			}
-			else {
+			} else {
 				alert(notifyText);
 			}
 		},
@@ -379,16 +404,30 @@
 		 * Distance calculations
 		 */
 		geoCodeCalcToRadian: function (v) {
-			this.writeDebug('geoCodeCalcToRadian',v);
+			this.writeDebug('geoCodeCalcToRadian', v);
 			return v * (Math.PI / 180);
 		},
 		geoCodeCalcDiffRadian: function (v1, v2) {
-			this.writeDebug('geoCodeCalcDiffRadian',arguments);
+			this.writeDebug('geoCodeCalcDiffRadian', arguments);
 			return this.geoCodeCalcToRadian(v2) - this.geoCodeCalcToRadian(v1);
 		},
 		geoCodeCalcCalcDistance: function (lat1, lng1, lat2, lng2, radius) {
-			this.writeDebug('geoCodeCalcCalcDistance',arguments);
-			return radius * 2 * Math.asin(Math.min(1, Math.sqrt(( Math.pow(Math.sin((this.geoCodeCalcDiffRadian(lat1, lat2)) / 2.0), 2.0) + Math.cos(this.geoCodeCalcToRadian(lat1)) * Math.cos(this.geoCodeCalcToRadian(lat2)) * Math.pow(Math.sin((this.geoCodeCalcDiffRadian(lng1, lng2)) / 2.0), 2.0) ))));
+			this.writeDebug('geoCodeCalcCalcDistance', arguments);
+			return (
+				radius *
+				2 *
+				Math.asin(
+					Math.min(
+						1,
+						Math.sqrt(
+							Math.pow(Math.sin(this.geoCodeCalcDiffRadian(lat1, lat2) / 2.0), 2.0) +
+								Math.cos(this.geoCodeCalcToRadian(lat1)) *
+									Math.cos(this.geoCodeCalcToRadian(lat2)) *
+									Math.pow(Math.sin(this.geoCodeCalcDiffRadian(lng1, lng2) / 2.0), 2.0)
+						)
+					)
+				)
+			);
 		},
 
 		/**
@@ -400,10 +439,10 @@
 		 *
 		 * @returns {boolean}
 		 */
-		inRange: function(min, num, max){
-			this.writeDebug('inRange',arguments);
+		inRange: function (min, num, max) {
+			this.writeDebug('inRange', arguments);
 			num = Math.abs(num);
-			return isFinite(num) && (num >= min) && (num <= max);
+			return isFinite(num) && num >= min && num <= max;
 		},
 
 		/**
@@ -415,7 +454,7 @@
 		 * @returns {boolean}
 		 */
 		coordinatesInRange: function (lat, lng) {
-			this.writeDebug('coordinatesInRange',arguments);
+			this.writeDebug('coordinatesInRange', arguments);
 			return this.inRange(-90, lat, 90) && this.inRange(-180, lng, 180);
 		},
 
@@ -426,13 +465,13 @@
 		 *
 		 * @returns {string} query string value
 		 */
-		getQueryString: function(param) {
-			this.writeDebug('getQueryString',param);
-			if(param) {
+		getQueryString: function (param) {
+			this.writeDebug('getQueryString', param);
+			if (param) {
 				param = param.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
 				var regex = new RegExp('[\\?&]' + param + '=([^&#]*)'),
 					results = regex.exec(location.search);
-				return (results === null) ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+				return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
 			}
 		},
 
@@ -441,7 +480,7 @@
 		 *
 		 * @returns {Object} google.maps.Map instance
 		 */
-		getMap: function() {
+		getMap: function () {
 			return this.map;
 		},
 
@@ -452,10 +491,10 @@
 			this.writeDebug('_loadTemplates');
 			var source;
 			var _this = this;
-			var templateError = '<div class="bh-sl-error">Error: Could not load plugin templates. Check the paths and ensure they have been uploaded. Paths will be wrong if you do not run this from a web server.</div>';
+			var templateError =
+				'<div class="bh-sl-error">Error: Could not load plugin templates. Check the paths and ensure they have been uploaded. Paths will be wrong if you do not run this from a web server.</div>';
 			// Get the KML templates
 			if (this.settings.dataType === 'kml' && this.settings.listTemplateID === null && this.settings.infowindowTemplateID === null) {
-
 				// Try loading the external template files
 				$.when(
 					// KML infowindows
@@ -469,15 +508,17 @@
 						source = template;
 						listTemplate = Handlebars.compile(source);
 					})
-				).then(function () {
-					// Continue to the main script if templates are loaded successfully
-					_this.locator();
-
-				}, function () {
-					// KML templates not loaded
-					$('.' + _this.settings.formContainer).append(templateError);
-					throw new Error('Could not load storeLocator plugin templates');
-				});
+				).then(
+					function () {
+						// Continue to the main script if templates are loaded successfully
+						_this.locator();
+					},
+					function () {
+						// KML templates not loaded
+						$('.' + _this.settings.formContainer).append(templateError);
+						throw new Error('Could not load storeLocator plugin templates');
+					}
+				);
 			}
 			// Handle script tag template method
 			else if (this.settings.listTemplateID !== null && this.settings.infowindowTemplateID !== null) {
@@ -505,15 +546,17 @@
 						source = template;
 						listTemplate = Handlebars.compile(source);
 					})
-				).then(function () {
-					// Continue to the main script if templates are loaded successfully
-					_this.locator();
-
-				}, function () {
-					// JSON/XML templates not loaded
-					$('.' + _this.settings.formContainer).append(templateError);
-					throw new Error('Could not load storeLocator plugin templates');
-				});
+				).then(
+					function () {
+						// Continue to the main script if templates are loaded successfully
+						_this.locator();
+					},
+					function () {
+						// JSON/XML templates not loaded
+						$('.' + _this.settings.formContainer).append(templateError);
+						throw new Error('Could not load storeLocator plugin templates');
+					}
+				);
 			}
 		},
 
@@ -539,17 +582,16 @@
 			var _this = this;
 			// ASP.net or regular submission?
 			if (this.settings.noForm === true) {
-				$(document).on('click.'+pluginName, '.' + this.settings.formContainer + ' button', function (e) {
+				$(document).on('click.' + pluginName, '.' + this.settings.formContainer + ' button', function (e) {
 					_this.processForm(e);
 				});
-				$(document).on('keydown.'+pluginName, function (e) {
+				$(document).on('keydown.' + pluginName, function (e) {
 					if (e.keyCode === 13 && $('#' + _this.settings.addressID).is(':focus')) {
 						_this.processForm(e);
 					}
 				});
-			}
-			else {
-				$(document).on('submit.'+pluginName, '#' + this.settings.formID, function (e) {
+			} else {
+				$(document).on('submit.' + pluginName, '#' + this.settings.formID, function (e) {
 					_this.processForm(e);
 				});
 			}
@@ -574,7 +616,7 @@
 		 * @returns {Object} deferred object
 		 */
 		_getData: function (lat, lng, address, geocodeData, map) {
-			this.writeDebug('_getData',arguments);
+			this.writeDebug('_getData', arguments);
 			var _this = this,
 				northEast = '',
 				southWest = '',
@@ -583,8 +625,8 @@
 			// Define extra geocode result info
 			if (typeof geocodeData !== 'undefined' && typeof geocodeData.geometry.bounds !== 'undefined') {
 				formattedAddress = geocodeData.formatted_address;
-				northEast = JSON.stringify( geocodeData.geometry.bounds.getNorthEast() );
-				southWest = JSON.stringify( geocodeData.geometry.bounds.getSouthWest() );
+				northEast = JSON.stringify(geocodeData.geometry.bounds.getNorthEast());
+				southWest = JSON.stringify(geocodeData.geometry.bounds.getSouthWest());
 			}
 
 			// Before send callback
@@ -593,9 +635,9 @@
 			}
 
 			// Raw data
-			if(_this.settings.dataRaw !== null) {
+			if (_this.settings.dataRaw !== null) {
 				// XML
-				if( dataTypeRead === 'xml' ) {
+				if (dataTypeRead === 'xml') {
 					return $.parseXML(_this.settings.dataRaw);
 				}
 
@@ -603,14 +645,11 @@
 				else if (dataTypeRead === 'json') {
 					if (Array.isArray && Array.isArray(_this.settings.dataRaw)) {
 						return _this.settings.dataRaw;
-					}
-					else if (typeof _this.settings.dataRaw === 'string') {
+					} else if (typeof _this.settings.dataRaw === 'string') {
 						return JSON.parse(_this.settings.dataRaw);
-					}
-					else {
+					} else {
 						return [];
 					}
-
 				}
 			}
 			// Remote data
@@ -619,17 +658,17 @@
 
 				// Loading
 				if (this.settings.loading === true) {
-					$('.' + this.settings.formContainer).append('<div class="' + this.settings.loadingContainer +'"></div>');
+					$('.' + this.settings.formContainer).append('<div class="' + this.settings.loadingContainer + '"></div>');
 				}
 
 				// Data to pass with the AJAX request
 				var ajaxData = {
-					'origLat' : lat,
-					'origLng' : lng,
-					'origAddress': address,
-					'formattedAddress': formattedAddress,
-					'boundsNorthEast' : northEast,
-					'boundsSouthWest' : southWest
+					origLat: lat,
+					origLng: lng,
+					origAddress: address,
+					formattedAddress: formattedAddress,
+					boundsNorthEast: northEast,
+					boundsSouthWest: southWest
 				};
 
 				// Set up extra object for custom extra data to be passed with the AJAX request
@@ -639,20 +678,24 @@
 
 				// AJAX request
 				$.ajax({
-					type         : 'GET',
-					url          : this.settings.dataLocation + (this.settings.dataType === 'jsonp' ? (this.settings.dataLocation.match(/\?/) ? '&' : '?') + 'callback=?' : ''),
+					type: 'GET',
+					url:
+						this.settings.dataLocation +
+						(this.settings.dataType === 'jsonp' ? (this.settings.dataLocation.match(/\?/) ? '&' : '?') + 'callback=?' : ''),
 					// Passing the lat, lng, address, formatted address and bounds with the AJAX request so they can optionally be used by back-end languages
-					data         : ajaxData,
-					dataType     : dataTypeRead,
-					jsonpCallback: (this.settings.dataType === 'jsonp' ? this.settings.callbackJsonp : null)
-				}).done(function(p) {
-					d.resolve(p);
+					data: ajaxData,
+					dataType: dataTypeRead,
+					jsonpCallback: this.settings.dataType === 'jsonp' ? this.settings.callbackJsonp : null
+				})
+					.done(function (p) {
+						d.resolve(p);
 
-					// Loading remove
-					if (_this.settings.loading === true) {
-						$('.' + _this.settings.formContainer + ' .' + _this.settings.loadingContainer).remove();
-					}
-				}).fail(d.reject);
+						// Loading remove
+						if (_this.settings.loading === true) {
+							$('.' + _this.settings.formContainer + ' .' + _this.settings.loadingContainer).remove();
+						}
+					})
+					.fail(d.reject);
 				return d.promise();
 			}
 		},
@@ -663,8 +706,8 @@
 		_start: function () {
 			this.writeDebug('_start');
 			var _this = this,
-					doAutoGeo = this.settings.autoGeocode,
-					latlng;
+				doAutoGeo = this.settings.autoGeocode,
+				latlng;
 
 			// Full map blank start
 			if (_this.settings.fullMapStartBlank !== false) {
@@ -680,7 +723,7 @@
 				_this.map = new google.maps.Map(document.getElementById(_this.settings.mapID), myOptions);
 
 				// Re-center the map when the browser is re-sized
-        window.addEventListener('resize', function() {
+				window.addEventListener('resize', function () {
 					var center = _this.map.getCenter();
 					google.maps.event.trigger(_this.map, 'resize');
 					_this.map.setCenter(center);
@@ -689,27 +732,29 @@
 				// Only do this once
 				_this.settings.fullMapStartBlank = false;
 				myOptions.zoom = originalZoom;
-			}
-			else {
+			} else {
 				// If a default location is set
 				if (this.settings.defaultLoc === true) {
 					this.defaultLocation();
 				}
 
 				// If there is already have a value in the address bar
-				if ($.trim($('#' + this.settings.addressID).val()) !== ''){
+				if ($.trim($('#' + this.settings.addressID).val()) !== '') {
 					_this.writeDebug('Using Address Field');
 					_this.processForm(null);
 					doAutoGeo = false; // No need for additional processing
 				}
 				// If show full map option is true
 				else if (this.settings.fullMapStart === true && this.settings.defaultLoc === false) {
-					if ((this.settings.querystringParams === true && this.getQueryString(this.settings.addressID)) || (this.settings.querystringParams === true && this.getQueryString(this.settings.searchID)) || (this.settings.querystringParams === true && this.getQueryString(this.settings.maxDistanceID))) {
+					if (
+						(this.settings.querystringParams === true && this.getQueryString(this.settings.addressID)) ||
+						(this.settings.querystringParams === true && this.getQueryString(this.settings.searchID)) ||
+						(this.settings.querystringParams === true && this.getQueryString(this.settings.maxDistanceID))
+					) {
 						_this.writeDebug('Using Query String');
 						this.processForm(null);
 						doAutoGeo = false; // No need for additional processing
-					}
-					else {
+					} else {
 						this.mapping(null);
 					}
 				}
@@ -726,7 +771,7 @@
 			if (this.settings.autoGeocode !== null) {
 				_this.writeDebug('Button Geo');
 
-				$(document).on('click.'+pluginName, '#' + this.settings.geocodeID, function () {
+				$(document).on('click.' + pluginName, '#' + this.settings.geocodeID, function () {
 					_this.htmlGeocode();
 				});
 			}
@@ -735,41 +780,43 @@
 		/**
 		 * Geocode function used for auto geocode setting and geocodeID button
 		 */
-		htmlGeocode: function() {
-			this.writeDebug('htmlGeocode',arguments);
+		htmlGeocode: function () {
+			this.writeDebug('htmlGeocode', arguments);
 			var _this = this;
 
-			if (_this.settings.sessionStorage === true && window.sessionStorage && window.sessionStorage.getItem('myGeo')){
+			if (_this.settings.sessionStorage === true && window.sessionStorage && window.sessionStorage.getItem('myGeo')) {
 				_this.writeDebug('Using Session Saved Values for GEO');
 				_this.autoGeocodeQuery(JSON.parse(window.sessionStorage.getItem('myGeo')));
 				return false;
-			}
-			else if (navigator.geolocation) {
-				navigator.geolocation.getCurrentPosition(function(position){
-					_this.writeDebug('Current Position Result');
-					// To not break autoGeocodeQuery then we create the obj to match the geolocation format
-					var pos = {
-						coords: {
-							latitude : position.coords.latitude,
-							longitude: position.coords.longitude,
-							accuracy : position.coords.accuracy
+			} else if (navigator.geolocation) {
+				navigator.geolocation.getCurrentPosition(
+					function (position) {
+						_this.writeDebug('Current Position Result');
+						// To not break autoGeocodeQuery then we create the obj to match the geolocation format
+						var pos = {
+							coords: {
+								latitude: position.coords.latitude,
+								longitude: position.coords.longitude,
+								accuracy: position.coords.accuracy
+							}
+						};
+
+						// Have to do this to get around scope issues
+						if (_this.settings.sessionStorage === true && window.sessionStorage) {
+							window.sessionStorage.setItem('myGeo', JSON.stringify(pos));
 						}
-					};
 
-					// Have to do this to get around scope issues
-					if (_this.settings.sessionStorage === true && window.sessionStorage) {
-						window.sessionStorage.setItem('myGeo',JSON.stringify(pos));
+						// Callback
+						if (_this.settings.callbackAutoGeoSuccess) {
+							_this.settings.callbackAutoGeoSuccess.call(this, pos);
+						}
+
+						_this.autoGeocodeQuery(pos);
+					},
+					function (error) {
+						_this._autoGeocodeError(error);
 					}
-
-					// Callback
-					if (_this.settings.callbackAutoGeoSuccess) {
-						_this.settings.callbackAutoGeoSuccess.call(this, pos);
-					}
-
-					_this.autoGeocodeQuery(pos);
-				}, function(error){
-					_this._autoGeocodeError(error);
-				});
+				);
 			}
 		},
 
@@ -777,7 +824,7 @@
 		 * Geocode function used to geocode the origin (entered location)
 		 */
 		googleGeocode: function (thisObj) {
-			thisObj.writeDebug('googleGeocode',arguments);
+			thisObj.writeDebug('googleGeocode', arguments);
 			var geocoder = new google.maps.Geocoder();
 			this.geocode = function (request, callbackFunction) {
 				geocoder.geocode(request, function (results, status) {
@@ -799,7 +846,7 @@
 		 * Reverse geocode to get address for automatic options needed for directions link
 		 */
 		reverseGoogleGeocode: function (thisObj) {
-			thisObj.writeDebug('reverseGoogleGeocode',arguments);
+			thisObj.writeDebug('reverseGoogleGeocode', arguments);
 			var geocoder = new google.maps.Geocoder();
 			this.geocode = function (request, callbackFunction) {
 				geocoder.geocode(request, function (results, status) {
@@ -827,7 +874,7 @@
 		 * @returns {number}
 		 */
 		roundNumber: function (num, dec) {
-			this.writeDebug('roundNumber',arguments);
+			this.writeDebug('roundNumber', arguments);
 			return Math.round(num * Math.pow(10, dec)) / Math.pow(10, dec);
 		},
 
@@ -839,7 +886,7 @@
 		 * @returns {boolean}
 		 */
 		isEmptyObject: function (obj) {
-			this.writeDebug('isEmptyObject',arguments);
+			this.writeDebug('isEmptyObject', arguments);
 			for (var key in obj) {
 				if (obj.hasOwnProperty(key)) {
 					return false;
@@ -856,18 +903,18 @@
 		 * @returns {boolean}
 		 */
 		hasEmptyObjectVals: function (obj) {
-			this.writeDebug('hasEmptyObjectVals',arguments);
-				var objTest = true;
+			this.writeDebug('hasEmptyObjectVals', arguments);
+			var objTest = true;
 
-				for(var key in obj) {
-					if (obj.hasOwnProperty(key)) {
-						if (obj[key] !== '' && obj[key].length !== 0) {
-							objTest = false;
-						}
+			for (var key in obj) {
+				if (obj.hasOwnProperty(key)) {
+					if (obj[key] !== '' && obj[key].length !== 0) {
+						objTest = false;
 					}
 				}
+			}
 
-				return objTest;
+			return objTest;
 		},
 
 		/**
@@ -878,8 +925,8 @@
 		 *
 		 * @returns {boolean}
 		 */
-		hasSingleGroupFilterVal: function(obj, key) {
-			this.writeDebug('hasSingleGroupFilterVal',arguments);
+		hasSingleGroupFilterVal: function (obj, key) {
+			this.writeDebug('hasSingleGroupFilterVal', arguments);
 
 			// Copy the object so the original doesn't change.
 			var objCopy = Object.assign({}, obj);
@@ -915,7 +962,7 @@
 		 * @param loopcount {number} current marker id
 		 */
 		_createLocationVariables: function (loopcount) {
-			this.writeDebug('_createLocationVariables',arguments);
+			this.writeDebug('_createLocationVariables', arguments);
 			var value;
 			locationData = {};
 
@@ -937,9 +984,10 @@
 		 *
 		 * @param locationsarray {array} locationset array
 		 */
-		sortAlpha: function(locationsarray) {
-			this.writeDebug('sortAlpha',arguments);
-			var property = (this.settings.sortBy.hasOwnProperty('prop') && typeof this.settings.sortBy.prop !== 'undefined') ?  this.settings.sortBy.prop : 'name';
+		sortAlpha: function (locationsarray) {
+			this.writeDebug('sortAlpha', arguments);
+			var property =
+				this.settings.sortBy.hasOwnProperty('prop') && typeof this.settings.sortBy.prop !== 'undefined' ? this.settings.sortBy.prop : 'name';
 
 			if (this.settings.sortBy.hasOwnProperty('order') && this.settings.sortBy.order.toString() === 'desc') {
 				locationsarray.sort(function (a, b) {
@@ -957,9 +1005,10 @@
 		 *
 		 * @param locationsarray {array} locationset array
 		 */
-		sortDate: function(locationsarray) {
-			this.writeDebug('sortDate',arguments);
-			var property = (this.settings.sortBy.hasOwnProperty('prop') && typeof this.settings.sortBy.prop !== 'undefined') ?  this.settings.sortBy.prop : 'date';
+		sortDate: function (locationsarray) {
+			this.writeDebug('sortDate', arguments);
+			var property =
+				this.settings.sortBy.hasOwnProperty('prop') && typeof this.settings.sortBy.prop !== 'undefined' ? this.settings.sortBy.prop : 'date';
 
 			if (this.settings.sortBy.hasOwnProperty('order') && this.settings.sortBy.order.toString() === 'desc') {
 				locationsarray.sort(function (a, b) {
@@ -979,12 +1028,11 @@
 		 * @param distanceOverride {boolean} Force sort by distance
 		 */
 		sortNumerically: function (locationsarray, distanceOverride) {
-			this.writeDebug('sortNumerically',arguments);
-			var property = (
-				this.settings.sortBy !== null &&
-				this.settings.sortBy.hasOwnProperty('prop') &&
-				typeof this.settings.sortBy.prop !== 'undefined'
-			) ?  this.settings.sortBy.prop : 'distance';
+			this.writeDebug('sortNumerically', arguments);
+			var property =
+				this.settings.sortBy !== null && this.settings.sortBy.hasOwnProperty('prop') && typeof this.settings.sortBy.prop !== 'undefined'
+					? this.settings.sortBy.prop
+					: 'distance';
 
 			if (typeof distanceOverride !== 'undefined' && distanceOverride === true) {
 				property = 'distance';
@@ -992,11 +1040,11 @@
 
 			if (this.settings.sortBy !== null && this.settings.sortBy.hasOwnProperty('order') && this.settings.sortBy.order.toString() === 'desc') {
 				locationsarray.sort(function (a, b) {
-					return ((b[property] < a[property]) ? -1 : ((b[property] > a[property]) ? 1 : 0));
+					return b[property] < a[property] ? -1 : b[property] > a[property] ? 1 : 0;
 				});
 			} else {
 				locationsarray.sort(function (a, b) {
-					return ((a[property] < b[property]) ? -1 : ((a[property] > b[property]) ? 1 : 0));
+					return a[property] < b[property] ? -1 : a[property] > b[property] ? 1 : 0;
 				});
 			}
 		},
@@ -1007,7 +1055,7 @@
 		 * @param locationsarray {array} locationset array
 		 */
 		sortCustom: function (locationsarray) {
-			this.writeDebug('sortCustom',arguments);
+			this.writeDebug('sortCustom', arguments);
 
 			// Alphabetically, date, or numeric
 			if (this.settings.sortBy.hasOwnProperty('method') && this.settings.sortBy.method.toString() === 'alpha') {
@@ -1028,9 +1076,9 @@
 		 *
 		 * @returns {boolean}
 		 */
-		filterMatching: function(filter, val, inclusive) {
-			this.writeDebug('inclusiveFilter',arguments);
-			inclusive = (typeof inclusive !== 'undefined') ?  inclusive : true;
+		filterMatching: function (filter, val, inclusive) {
+			this.writeDebug('inclusiveFilter', arguments);
+			inclusive = typeof inclusive !== 'undefined' ? inclusive : true;
 			var applyFilters;
 
 			// Undefined check.
@@ -1039,13 +1087,13 @@
 			}
 
 			// Modify the join depending on inclusive (AND) vs exclusive (OR).
-			if ( true === inclusive ) {
+			if (true === inclusive) {
 				applyFilters = filter.join('');
 			} else {
 				applyFilters = filter.join('|');
 			}
 
-			if ((new RegExp(applyFilters, 'i').test(val.replace(/([.*+?^=!:${}()|\[\]\/\\]|&\s+)/g, '')))) {
+			if (new RegExp(applyFilters, 'i').test(val.replace(/([.*+?^=!:${}()|\[\]\/\\]|&\s+)/g, ''))) {
 				return true;
 			}
 
@@ -1069,9 +1117,11 @@
 					var testResults = [];
 
 					for (var l = 0; l < filters[k].length; l++) {
-
 						// Exclusive filtering
-						if (this.settings.exclusiveFiltering === true || (this.settings.exclusiveTax !== null && Array.isArray(this.settings.exclusiveTax) && this.settings.exclusiveTax.indexOf(k) !== -1)) {
+						if (
+							this.settings.exclusiveFiltering === true ||
+							(this.settings.exclusiveTax !== null && Array.isArray(this.settings.exclusiveTax) && this.settings.exclusiveTax.indexOf(k) !== -1)
+						) {
 							testResults[l] = this.filterMatching(filters[k], data[k], false);
 						}
 						// Inclusive filtering
@@ -1102,8 +1152,8 @@
 		 *
 		 * @returns {string}
 		 */
-		_paginationOutput: function(currentPage, totalPages) {
-			this.writeDebug('_paginationOutput',arguments);
+		_paginationOutput: function (currentPage, totalPages) {
+			this.writeDebug('_paginationOutput', arguments);
 
 			currentPage = parseFloat(currentPage);
 			var output = '';
@@ -1111,7 +1161,7 @@
 			var prevPage = currentPage - 1;
 
 			// Previous page
-			if ( currentPage > 0 ) {
+			if (currentPage > 0) {
 				output += '<li class="bh-sl-next-prev" data-page="' + prevPage + '">' + this.settings.prevPage + '</li>';
 			}
 
@@ -1121,14 +1171,13 @@
 
 				if (p === currentPage) {
 					output += '<li class="bh-sl-current" data-page="' + p + '">' + n + '</li>';
-				}
-				else {
+				} else {
 					output += '<li data-page="' + p + '">' + n + '</li>';
 				}
 			}
 
 			// Next page
-			if ( nextPage < totalPages ) {
+			if (nextPage < totalPages) {
 				output += '<li class="bh-sl-next-prev" data-page="' + nextPage + '">' + this.settings.nextPage + '</li>';
 			}
 
@@ -1141,13 +1190,13 @@
 		 * @param currentPage {number} optional current page
 		 */
 		paginationSetup: function (currentPage) {
-			this.writeDebug('paginationSetup',arguments);
+			this.writeDebug('paginationSetup', arguments);
 			var pagesOutput = '';
 			var totalPages;
 			var $paginationList = $('.bh-sl-pagination-container .bh-sl-pagination');
 
 			// Total pages
-			if ( this.settings.storeLimit === -1 || locationset.length < this.settings.storeLimit ) {
+			if (this.settings.storeLimit === -1 || locationset.length < this.settings.storeLimit) {
 				totalPages = locationset.length / this.settings.locationsPerPage;
 			} else {
 				totalPages = this.settings.storeLimit / this.settings.locationsPerPage;
@@ -1160,7 +1209,6 @@
 
 			// Initial pagination setup
 			if ($paginationList.length === 0) {
-
 				pagesOutput = this._paginationOutput(currentPage, totalPages);
 			}
 			// Update pagination on page change
@@ -1185,7 +1233,7 @@
 		 * @returns {Object} Google Maps icon object
 		 */
 		markerImage: function (markerUrl, markerWidth, markerHeight) {
-			this.writeDebug('markerImage',arguments);
+			this.writeDebug('markerImage', arguments);
 			var markerImg;
 
 			// User defined marker dimensions
@@ -1222,7 +1270,7 @@
 		 * @returns {Object} Google Maps marker
 		 */
 		createMarker: function (point, name, address, letter, map, category) {
-			this.writeDebug('createMarker',arguments);
+			this.writeDebug('createMarker', arguments);
 			var marker, markerImg, letterMarkerImg;
 			var categories = [];
 
@@ -1234,16 +1282,24 @@
 						// Break the category variable into an array if there are multiple categories for the location
 						categories = category.split(',');
 						// With multiple categories the color will be determined by the last matched category in the data
-						for(var i = 0; i < categories.length; i++) {
+						for (var i = 0; i < categories.length; i++) {
 							if (categories[i] in this.settings.catMarkers) {
-								markerImg = this.markerImage(this.settings.catMarkers[categories[i]][0], parseInt(this.settings.catMarkers[categories[i]][1]), parseInt(this.settings.catMarkers[categories[i]][2]));
+								markerImg = this.markerImage(
+									this.settings.catMarkers[categories[i]][0],
+									parseInt(this.settings.catMarkers[categories[i]][1]),
+									parseInt(this.settings.catMarkers[categories[i]][2])
+								);
 							}
 						}
 					}
 					// Single category
 					else {
 						if (category in this.settings.catMarkers) {
-							markerImg = this.markerImage(this.settings.catMarkers[category][0], parseInt(this.settings.catMarkers[category][1]), parseInt(this.settings.catMarkers[category][2]));
+							markerImg = this.markerImage(
+								this.settings.catMarkers[category][0],
+								parseInt(this.settings.catMarkers[category][1]),
+								parseInt(this.settings.catMarkers[category][2])
+							);
 						}
 					}
 				}
@@ -1253,8 +1309,7 @@
 			if (this.settings.markerImg !== null) {
 				if (this.settings.markerDim === null) {
 					markerImg = this.markerImage(this.settings.markerImg);
-				}
-				else {
+				} else {
 					markerImg = this.markerImage(this.settings.markerImg, this.settings.markerDim.width, this.settings.markerDim.height);
 				}
 			}
@@ -1263,28 +1318,35 @@
 			if (this.settings.callbackCreateMarker) {
 				// Marker override callback
 				marker = this.settings.callbackCreateMarker.call(this, map, point, letter, category);
-			}
-			else {
+			} else {
 				// Create the default markers
-				if (this.settings.disableAlphaMarkers === true || this.settings.storeLimit === -1 || this.settings.storeLimit > 26 || this.settings.catMarkers !== null || this.settings.markerImg !== null || (this.settings.fullMapStart === true && firstRun === true && (isNaN(this.settings.fullMapStartListLimit) || this.settings.fullMapStartListLimit > 26 || this.settings.fullMapStartListLimit === -1))) {
+				if (
+					this.settings.disableAlphaMarkers === true ||
+					this.settings.storeLimit === -1 ||
+					this.settings.storeLimit > 26 ||
+					this.settings.catMarkers !== null ||
+					this.settings.markerImg !== null ||
+					(this.settings.fullMapStart === true &&
+						firstRun === true &&
+						(isNaN(this.settings.fullMapStartListLimit) || this.settings.fullMapStartListLimit > 26 || this.settings.fullMapStartListLimit === -1))
+				) {
 					marker = new google.maps.Marker({
 						draggable: false,
-						icon     : markerImg, // Reverts to default marker if nothing is passed
-						map      : map,
+						icon: markerImg, // Reverts to default marker if nothing is passed
+						map: map,
 						optimized: false,
-						position : point,
-						title    : name,
+						position: point,
+						title: name
 					});
-				}
-				else {
+				} else {
 					// Letter markers
 					marker = new google.maps.Marker({
 						draggable: false,
-						label    : letter,
-						map      : map,
+						label: letter,
+						map: map,
 						optimized: false,
-						position : point,
-						title    : name,
+						position: point,
+						title: name
 					});
 				}
 			}
@@ -1302,29 +1364,25 @@
 		 * @returns {Object} extended location data object
 		 */
 		_defineLocationData: function (currentMarker, storeStart, page) {
-			this.writeDebug('_defineLocationData',arguments);
+			this.writeDebug('_defineLocationData', arguments);
 			var indicator = '';
 			this._createLocationVariables(currentMarker.get('id'));
 
-			var altDistLength,
-				distLength;
+			var altDistLength, distLength;
 
 			if (locationData.distance <= 1) {
 				if (this.settings.lengthUnit === 'km') {
 					distLength = this.settings.kilometerLang;
 					altDistLength = this.settings.mileLang;
-				}
-				else {
+				} else {
 					distLength = this.settings.mileLang;
 					altDistLength = this.settings.kilometerLang;
 				}
-			}
-			else {
+			} else {
 				if (this.settings.lengthUnit === 'km') {
 					distLength = this.settings.kilometersLang;
 					altDistLength = this.settings.milesLang;
-				}
-				else {
+				} else {
 					distLength = this.settings.milesLang;
 					altDistLength = this.settings.kilometersLang;
 				}
@@ -1333,27 +1391,34 @@
 			// Set up alpha character
 			var markerId = currentMarker.get('id');
 			// Use dot markers instead of alpha if there are more than 26 locations
-			if (this.settings.disableAlphaMarkers === true || this.settings.storeLimit === -1 || this.settings.storeLimit > 26 || (this.settings.fullMapStart === true && firstRun === true && (isNaN(this.settings.fullMapStartListLimit) || this.settings.fullMapStartListLimit > 26 || this.settings.fullMapStartListLimit === -1))) {
+			if (
+				this.settings.disableAlphaMarkers === true ||
+				this.settings.storeLimit === -1 ||
+				this.settings.storeLimit > 26 ||
+				(this.settings.fullMapStart === true &&
+					firstRun === true &&
+					(isNaN(this.settings.fullMapStartListLimit) || this.settings.fullMapStartListLimit > 26 || this.settings.fullMapStartListLimit === -1))
+			) {
 				indicator = markerId + 1;
-			}
-			else {
+			} else {
 				if (page > 0) {
 					indicator = String.fromCharCode('A'.charCodeAt(0) + (storeStart + markerId));
-				}
-				else {
+				} else {
 					indicator = String.fromCharCode('A'.charCodeAt(0) + markerId);
 				}
 			}
 
 			// Define location data
 			return {
-				location: [$.extend(locationData, {
-					'markerid' : markerId,
-					'marker'   : indicator,
-					'altlength': altDistLength,
-					'length'   : distLength,
-					'origin'   : originalOrigin
-				})]
+				location: [
+					$.extend(locationData, {
+						markerid: markerId,
+						marker: indicator,
+						altlength: altDistLength,
+						length: distLength,
+						origin: originalOrigin
+					})
+				]
 			};
 		},
 
@@ -1365,7 +1430,7 @@
 		 * @param page {number} optional current page
 		 */
 		listSetup: function (marker, storeStart, page) {
-			this.writeDebug('listSetup',arguments);
+			this.writeDebug('listSetup', arguments);
 			// Define the location data
 			var locations = this._defineLocationData(marker, storeStart, page);
 
@@ -1383,21 +1448,25 @@
 			var markerImg;
 
 			// Reset the previously selected marker
-			if ( typeof prevSelectedMarkerAfter !== 'undefined' ) {
-				prevSelectedMarkerAfter.setIcon( prevSelectedMarkerBefore );
+			if (typeof prevSelectedMarkerAfter !== 'undefined') {
+				prevSelectedMarkerAfter.setIcon(prevSelectedMarkerBefore);
 			}
 
 			// Change the selected marker icon
 			if (this.settings.selectedMarkerImgDim === null) {
 				markerImg = this.markerImage(this.settings.selectedMarkerImg);
 			} else {
-				markerImg = this.markerImage(this.settings.selectedMarkerImg, this.settings.selectedMarkerImgDim.width, this.settings.selectedMarkerImgDim.height);
+				markerImg = this.markerImage(
+					this.settings.selectedMarkerImg,
+					this.settings.selectedMarkerImgDim.width,
+					this.settings.selectedMarkerImgDim.height
+				);
 			}
 
 			// Save the marker before switching it
 			prevSelectedMarkerBefore = marker.icon;
 
-			marker.setIcon( markerImg );
+			marker.setIcon(markerImg);
 
 			// Save the marker to a variable so it can be reverted when another marker is clicked
 			prevSelectedMarkerAfter = marker;
@@ -1413,7 +1482,7 @@
 		 * @param page {number}
 		 */
 		createInfowindow: function (marker, location, infowindow, storeStart, page) {
-			this.writeDebug('createInfowindow',arguments);
+			this.writeDebug('createInfowindow', arguments);
 			var _this = this;
 			// Define the location data
 			var locations = this._defineLocationData(marker, storeStart, page);
@@ -1465,7 +1534,7 @@
 		 * @param position {Object} coordinates
 		 */
 		autoGeocodeQuery: function (position) {
-			this.writeDebug('autoGeocodeQuery',arguments);
+			this.writeDebug('autoGeocodeQuery', arguments);
 			var _this = this,
 				distance = null,
 				$distanceInput = $('#' + this.settings.maxDistanceID),
@@ -1474,21 +1543,19 @@
 			// Query string parameters
 			if (this.settings.querystringParams === true) {
 				// Check for distance query string parameters
-				if (this.getQueryString(this.settings.maxDistanceID)){
+				if (this.getQueryString(this.settings.maxDistanceID)) {
 					distance = this.getQueryString(this.settings.maxDistanceID);
 
 					if ($distanceInput.val() !== '') {
 						distance = $distanceInput.val();
 					}
-				}
-				else{
+				} else {
 					// Get the distance if set
 					if (this.settings.maxDistance === true) {
 						distance = $distanceInput.val() || '';
 					}
 				}
-			}
-			else {
+			} else {
 				// Get the distance if set
 				if (this.settings.maxDistance === true) {
 					distance = $distanceInput.val() || '';
@@ -1498,7 +1565,7 @@
 			// The address needs to be determined for the directions link
 			var r = new this.reverseGoogleGeocode(this);
 			var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-			r.geocode({'latLng': latlng}, function (data) {
+			r.geocode({ latLng: latlng }, function (data) {
 				if (data !== null) {
 					originAddress = addressInput = data.address;
 					olat = mappingObj.lat = position.coords.latitude;
@@ -1531,7 +1598,7 @@
 		/**
 		 * Default location method
 		 */
-		defaultLocation: function() {
+		defaultLocation: function () {
 			this.writeDebug('defaultLocation');
 			var _this = this,
 				distance = null,
@@ -1541,21 +1608,19 @@
 			// Query string parameters
 			if (this.settings.querystringParams === true) {
 				// Check for distance query string parameters
-				if (this.getQueryString(this.settings.maxDistanceID)){
+				if (this.getQueryString(this.settings.maxDistanceID)) {
 					distance = this.getQueryString(this.settings.maxDistanceID);
 
 					if ($distanceInput.val() !== '') {
 						distance = $distanceInput.val();
 					}
-				}
-				else {
+				} else {
 					// Get the distance if set
 					if (this.settings.maxDistance === true) {
 						distance = $distanceInput.val() || '';
 					}
 				}
-			}
-			else {
+			} else {
 				// Get the distance if set
 				if (this.settings.maxDistance === true) {
 					distance = $distanceInput.val() || '';
@@ -1565,7 +1630,7 @@
 			// The address needs to be determined for the directions link
 			var r = new this.reverseGoogleGeocode(this);
 			var latlng = new google.maps.LatLng(this.settings.defaultLat, this.settings.defaultLng);
-			r.geocode({'latLng': latlng}, function (data) {
+			r.geocode({ latLng: latlng }, function (data) {
 				if (data !== null) {
 					originAddress = addressInput = data.address;
 					olat = mappingObj.lat = _this.settings.defaultLat;
@@ -1586,7 +1651,7 @@
 		 * @param newPage {number} page to change to
 		 */
 		paginationChange: function (newPage) {
-			this.writeDebug('paginationChange',arguments);
+			this.writeDebug('paginationChange', arguments);
 
 			// Page change callback
 			if (this.settings.callbackPageChange) {
@@ -1604,16 +1669,28 @@
 		 *
 		 * @returns {string} formatted address
 		 */
-		getAddressByMarker: function(markerID) {
-			this.writeDebug('getAddressByMarker',arguments);
-			var formattedAddress = "";
+		getAddressByMarker: function (markerID) {
+			this.writeDebug('getAddressByMarker', arguments);
+			var formattedAddress = '';
 			// Set up formatted address
-			if(locationset[markerID].address){ formattedAddress += locationset[markerID].address + ' '; }
-			if(locationset[markerID].address2){ formattedAddress += locationset[markerID].address2 + ' '; }
-			if(locationset[markerID].city){ formattedAddress += locationset[markerID].city + ', '; }
-			if(locationset[markerID].state){ formattedAddress += locationset[markerID].state + ' '; }
-			if(locationset[markerID].postal){ formattedAddress += locationset[markerID].postal + ' '; }
-			if(locationset[markerID].country){ formattedAddress += locationset[markerID].country + ' '; }
+			if (locationset[markerID].address) {
+				formattedAddress += locationset[markerID].address + ' ';
+			}
+			if (locationset[markerID].address2) {
+				formattedAddress += locationset[markerID].address2 + ' ';
+			}
+			if (locationset[markerID].city) {
+				formattedAddress += locationset[markerID].city + ', ';
+			}
+			if (locationset[markerID].state) {
+				formattedAddress += locationset[markerID].state + ' ';
+			}
+			if (locationset[markerID].postal) {
+				formattedAddress += locationset[markerID].postal + ' ';
+			}
+			if (locationset[markerID].country) {
+				formattedAddress += locationset[markerID].country + ' ';
+			}
 
 			return formattedAddress;
 		},
@@ -1621,14 +1698,13 @@
 		/**
 		 * Clear the markers from the map
 		 */
-		clearMarkers: function() {
+		clearMarkers: function () {
 			this.writeDebug('clearMarkers');
 			var locationsLimit = null;
 
 			if (locationset.length < this.settings.storeLimit) {
 				locationsLimit = locationset.length;
-			}
-			else {
+			} else {
 				locationsLimit = this.settings.storeLimit;
 			}
 
@@ -1644,8 +1720,8 @@
 		 * @param locID {number} location ID
 		 * @param map {Object} Google Map
 		 */
-		directionsRequest: function(origin, locID, map) {
-			this.writeDebug('directionsRequest',arguments);
+		directionsRequest: function (origin, locID, map) {
+			this.writeDebug('directionsRequest', arguments);
 
 			// Directions request callback
 			if (this.settings.callbackDirectionsRequest) {
@@ -1678,13 +1754,15 @@
 					destination: destination,
 					travelMode: google.maps.TravelMode.DRIVING
 				};
-				directionsService.route(request, function(response, status) {
+				directionsService.route(request, function (response, status) {
 					if (status === google.maps.DirectionsStatus.OK) {
 						directionsDisplay.setDirections(response);
 					}
 				});
 
-				$('.' + this.settings.locationList).prepend('<div class="bh-sl-close-directions-container"><div class="' + this.settings.closeIcon + '"></div></div>');
+				$('.' + this.settings.locationList).prepend(
+					'<div class="bh-sl-close-directions-container"><div class="' + this.settings.closeIcon + '"></div></div>'
+				);
 			}
 
 			$(document).off('click', '.' + this.settings.locationList + ' li .loc-directions a');
@@ -1693,7 +1771,7 @@
 		/**
 		 * Close the directions panel and reset the map with the original locationset and zoom
 		 */
-		closeDirections: function() {
+		closeDirections: function () {
 			this.writeDebug('closeDirections');
 
 			// Close directions callback
@@ -1704,17 +1782,16 @@
 			// Remove the close icon, remove the directions, add the list back
 			this.reset();
 
-			if ((olat) && (olng)) {
+			if (olat && olng) {
 				if (this.countFilters() === 0) {
 					this.settings.mapSettings.zoom = originalZoom;
-				}
-				else {
+				} else {
 					this.settings.mapSettings.zoom = 0;
 				}
 				this.processForm(null);
 			}
 
-			$(document).off('click.'+pluginName, '.' + this.settings.locationList + ' .bh-sl-close-icon');
+			$(document).off('click.' + pluginName, '.' + this.settings.locationList + ' .bh-sl-close-icon');
 		},
 
 		/**
@@ -1722,8 +1799,8 @@
 		 *
 		 * @param $lengthSwap
 		 */
-		lengthUnitSwap: function($lengthSwap) {
-			this.writeDebug('lengthUnitSwap',arguments);
+		lengthUnitSwap: function ($lengthSwap) {
+			this.writeDebug('lengthUnitSwap', arguments);
 
 			if ($lengthSwap.val() === 'alt-distance') {
 				$('.' + this.settings.locationList + ' .loc-alt-dist').show();
@@ -1740,7 +1817,7 @@
 		 * @param e {Object} event
 		 */
 		processForm: function (e) {
-			this.writeDebug('processForm',arguments);
+			this.writeDebug('processForm', arguments);
 			var _this = this,
 				distance = null,
 				geocodeRestrictions = {},
@@ -1755,12 +1832,16 @@
 			}
 
 			// Blur any form field to hide mobile keyboards.
-			$('.' + _this.settings.formContainer +' input, .' + _this.settings.formContainer + ' select').blur();
+			$('.' + _this.settings.formContainer + ' input, .' + _this.settings.formContainer + ' select').blur();
 
 			// Query string parameters
 			if (this.settings.querystringParams === true) {
 				// Check for query string parameters
-				if (this.getQueryString(this.settings.addressID) || this.getQueryString(this.settings.searchID) || this.getQueryString(this.settings.maxDistanceID)) {
+				if (
+					this.getQueryString(this.settings.addressID) ||
+					this.getQueryString(this.settings.searchID) ||
+					this.getQueryString(this.settings.maxDistanceID)
+				) {
 					addressInput = this.getQueryString(this.settings.addressID);
 					searchInput = this.getQueryString(this.settings.searchID);
 					distance = this.getQueryString(this.settings.maxDistanceID);
@@ -1775,8 +1856,7 @@
 					if ($distanceInput.val() !== '') {
 						distance = $distanceInput.val();
 					}
-				}
-				else {
+				} else {
 					// Get the user input and use it
 					addressInput = $addressInput.val() || '';
 					searchInput = $searchInput.val() || '';
@@ -1786,8 +1866,7 @@
 						distance = $distanceInput.val() || '';
 					}
 				}
-			}
-			else {
+			} else {
 				// Get the user input and use it
 				addressInput = $addressInput.val() || '';
 				searchInput = $searchInput.val() || '';
@@ -1826,15 +1905,14 @@
 
 			if (addressInput === '' && searchInput === '' && this.settings.autoGeocode !== true) {
 				this._start();
-			}
-			else if (addressInput !== '') {
+			} else if (addressInput !== '') {
 				// Check for existing name search and remove if address input is blank.
 				if (searchInput === '' && filters.hasOwnProperty('name')) {
 					delete filters.name;
 				}
 
 				// Geocode the origin if needed
-				if (typeof originalOrigin !== 'undefined' && typeof olat !== 'undefined' && typeof olng !== 'undefined' && (addressInput === originalOrigin)) {
+				if (typeof originalOrigin !== 'undefined' && typeof olat !== 'undefined' && typeof olng !== 'undefined' && addressInput === originalOrigin) {
 					// Run the mapping function
 					mappingObj.lat = olat;
 					mappingObj.lng = olng;
@@ -1842,43 +1920,43 @@
 					mappingObj.name = searchInput;
 					mappingObj.distance = distance;
 					_this.mapping(mappingObj);
-				}
-				else {
+				} else {
 					var g = new this.googleGeocode(this);
-					g.geocode({
-						address: addressInput,
-						componentRestrictions: geocodeRestrictions,
-						region: region
-					}, function (data) {
-						if (data !== null) {
-							olat = data.latitude;
-							olng = data.longitude;
+					g.geocode(
+						{
+							address: addressInput,
+							componentRestrictions: geocodeRestrictions,
+							region: region
+						},
+						function (data) {
+							if (data !== null) {
+								olat = data.latitude;
+								olng = data.longitude;
 
-							// Run the mapping function
-							mappingObj.lat = olat;
-							mappingObj.lng = olng;
-							mappingObj.origin = addressInput;
-							mappingObj.name = searchInput;
-							mappingObj.distance = distance;
-							mappingObj.geocodeResult = data.geocodeResult;
-							_this.mapping(mappingObj);
-						} else {
-							// Unable to geocode
-							_this.notify(_this.settings.addressErrorAlert);
+								// Run the mapping function
+								mappingObj.lat = olat;
+								mappingObj.lng = olng;
+								mappingObj.origin = addressInput;
+								mappingObj.name = searchInput;
+								mappingObj.distance = distance;
+								mappingObj.geocodeResult = data.geocodeResult;
+								_this.mapping(mappingObj);
+							} else {
+								// Unable to geocode
+								_this.notify(_this.settings.addressErrorAlert);
+							}
 						}
-					});
+					);
 				}
-			}
-			else if (searchInput !== '') {
+			} else if (searchInput !== '') {
 				// Check for existing origin and remove if address input is blank.
-				if ( addressInput === '' ) {
+				if (addressInput === '') {
 					delete mappingObj.origin;
 				}
 
 				mappingObj.name = searchInput;
 				_this.mapping(mappingObj);
-			}
-			else if (this.settings.autoGeocode === true) {
+			} else if (this.settings.autoGeocode === true) {
 				// Run the mapping function
 				mappingObj.lat = olat;
 				mappingObj.lng = olng;
@@ -1899,7 +1977,7 @@
 		 * @param maxDistance {number} maximum distance if set
 		 */
 		locationsSetup: function (data, lat, lng, origin, maxDistance) {
-			this.writeDebug('locationsSetup',arguments);
+			this.writeDebug('locationsSetup', arguments);
 			if (typeof origin !== 'undefined') {
 				if (!data.distance) {
 					data.distance = this.geoCodeCalcCalcDistance(lat, lng, data.lat, data.lng, GeoCodeCalc.EarthRadius);
@@ -1907,45 +1985,50 @@
 					// Alternative distance length unit
 					if (this.settings.lengthUnit === 'm') {
 						// Miles to kilometers
-						data.altdistance = parseFloat(data.distance)*1.609344;
+						data.altdistance = parseFloat(data.distance) * 1.609344;
 					} else if (this.settings.lengthUnit === 'km') {
 						// Kilometers to miles
-						data.altdistance = parseFloat(data.distance)/1.609344;
+						data.altdistance = parseFloat(data.distance) / 1.609344;
 					}
 				}
 			}
 
 			// Make sure the location coordinates are valid.
 			if (!this.coordinatesInRange(data.lat, data.lng)) {
-				this.writeDebug('locationsSetup', "location ignored because coordinates out of range: " + maxDistance, data);
+				this.writeDebug('locationsSetup', 'location ignored because coordinates out of range: ' + maxDistance, data);
 				return;
 			}
 
 			// Create the array
 			if (this.settings.maxDistance === true && typeof maxDistance !== 'undefined' && maxDistance !== null) {
 				if (data.distance <= maxDistance) {
-					locationset.push( data );
+					locationset.push(data);
 				} else {
-					this.writeDebug('locationsSetup', "location ignored because it is out of maxDistance: " + maxDistance, data);
+					this.writeDebug('locationsSetup', 'location ignored because it is out of maxDistance: ' + maxDistance, data);
 					return;
 				}
-			} else if (this.settings.maxDistance === true && this.settings.querystringParams === true && typeof maxDistance !== 'undefined' && maxDistance !== null) {
+			} else if (
+				this.settings.maxDistance === true &&
+				this.settings.querystringParams === true &&
+				typeof maxDistance !== 'undefined' &&
+				maxDistance !== null
+			) {
 				if (data.distance <= maxDistance) {
-					locationset.push( data );
+					locationset.push(data);
 				} else {
-					this.writeDebug('locationsSetup', "location ignored because it is out of maxDistance: " + maxDistance, data);
+					this.writeDebug('locationsSetup', 'location ignored because it is out of maxDistance: ' + maxDistance, data);
 					return;
 				}
 			} else {
-				locationset.push( data );
+				locationset.push(data);
 			}
 		},
 
 		/**
 		 * Set up front-end sorting functionality
 		 */
-		sorting: function() {
-			this.writeDebug('sorting',arguments);
+		sorting: function () {
+			this.writeDebug('sorting', arguments);
 			var _this = this,
 				$mapDiv = $('#' + _this.settings.mapID),
 				$sortSelect = $('#' + _this.settings.sortID);
@@ -1954,7 +2037,7 @@
 				return;
 			}
 
-			$sortSelect.on('change.'+pluginName, function (e) {
+			$sortSelect.on('change.' + pluginName, function (e) {
 				e.stopPropagation();
 
 				// Reset pagination.
@@ -1962,10 +2045,10 @@
 					_this.paginationChange(0);
 				}
 
-				var sortMethod,
-					sortVal;
+				var sortMethod, sortVal;
 
-				sortMethod = (typeof $(this).find(':selected').attr('data-method') !== 'undefined') ?  $(this).find(':selected').attr('data-method') : 'distance';
+				sortMethod =
+					typeof $(this).find(':selected').attr('data-method') !== 'undefined' ? $(this).find(':selected').attr('data-method') : 'distance';
 				sortVal = $(this).val();
 
 				_this.settings.sortBy.method = sortMethod;
@@ -1986,8 +2069,8 @@
 		 * Set up front-end ordering functionality - this ties in to sorting and that has to be enabled for this to
 		 * work.
 		 */
-		order: function() {
-			this.writeDebug('order',arguments);
+		order: function () {
+			this.writeDebug('order', arguments);
 			var _this = this,
 				$mapDiv = $('#' + _this.settings.mapID),
 				$orderSelect = $('#' + _this.settings.orderID);
@@ -1996,7 +2079,7 @@
 				return;
 			}
 
-			$orderSelect.on('change.'+pluginName, function (e) {
+			$orderSelect.on('change.' + pluginName, function (e) {
 				e.stopPropagation();
 
 				// Reset pagination.
@@ -2042,8 +2125,8 @@
 		 *
 		 * @param key {string} object key
 		 */
-		_existingCheckedFilters: function(key) {
-			this.writeDebug('_existingCheckedFilters',arguments);
+		_existingCheckedFilters: function (key) {
+			this.writeDebug('_existingCheckedFilters', arguments);
 			$('#' + this.settings.taxonomyFilters[key] + ' input[type=checkbox]').each(function () {
 				if ($(this).prop('checked')) {
 					var filterVal = $(this).val();
@@ -2061,13 +2144,13 @@
 		 *
 		 * @param key {string} object key
 		 */
-		_existingSelectedFilters: function(key) {
-			this.writeDebug('_existingSelectedFilters',arguments);
+		_existingSelectedFilters: function (key) {
+			this.writeDebug('_existingSelectedFilters', arguments);
 			$('#' + this.settings.taxonomyFilters[key] + ' select').each(function () {
 				var filterVal = $(this).val();
 
 				// Only add the taxonomy id if it doesn't already exist
-				if (typeof filterVal !== 'undefined' && filterVal !== '' &&  filters[key].indexOf(filterVal) === -1) {
+				if (typeof filterVal !== 'undefined' && filterVal !== '' && filters[key].indexOf(filterVal) === -1) {
 					filters[key] = [filterVal];
 				}
 			});
@@ -2078,8 +2161,8 @@
 		 *
 		 * @param key {string} object key
 		 */
-		_existingRadioFilters: function(key) {
-			this.writeDebug('_existingRadioFilters',arguments);
+		_existingRadioFilters: function (key) {
+			this.writeDebug('_existingRadioFilters', arguments);
 			$('#' + this.settings.taxonomyFilters[key] + ' input[type=radio]').each(function () {
 				if ($(this).prop('checked')) {
 					var filterVal = $(this).val();
@@ -2097,8 +2180,7 @@
 		 */
 		checkFilters: function () {
 			this.writeDebug('checkFilters');
-			for(var key in this.settings.taxonomyFilters) {
-
+			for (var key in this.settings.taxonomyFilters) {
 				if (this.settings.taxonomyFilters.hasOwnProperty(key)) {
 					// Find the existing checked boxes for each checkbox filter
 					this._existingCheckedFilters(key);
@@ -2118,27 +2200,26 @@
 		 * @param taxonomy {string} Current taxonomy.
 		 * @param value {array} Query string array values.
 		 */
-		selectQueryStringFilters: function( taxonomy, value ) {
+		selectQueryStringFilters: function (taxonomy, value) {
 			this.writeDebug('selectQueryStringFilters', arguments);
 
 			var $taxGroupContainer = $('#' + this.settings.taxonomyFilters[taxonomy]);
 
 			// Handle checkboxes.
-			if ( $taxGroupContainer.find('input[type="checkbox"]').length ) {
-
-				for ( var i = 0; i < value.length; i++ ) {
+			if ($taxGroupContainer.find('input[type="checkbox"]').length) {
+				for (var i = 0; i < value.length; i++) {
 					$taxGroupContainer.find('input:checkbox[value="' + value[i] + '"]').prop('checked', true);
 				}
 			}
 
 			// Handle select fields.
-			if ( $taxGroupContainer.find('select').length ) {
+			if ($taxGroupContainer.find('select').length) {
 				// Only expecting one value for select fields.
 				$taxGroupContainer.find('option[value="' + value[0] + '"]').prop('selected', true);
 			}
 
 			// Handle radio buttons.
-			if ( $taxGroupContainer.find('input[type="radio"]').length ) {
+			if ($taxGroupContainer.find('input[type="radio"]').length) {
 				// Only one value for radio button.
 				$taxGroupContainer.find('input:radio[value="' + value[0] + '"]').prop('checked', true);
 			}
@@ -2148,21 +2229,21 @@
 		 * Check query string parameters for filter values.
 		 */
 		checkQueryStringFilters: function () {
-			this.writeDebug('checkQueryStringFilters',arguments);
+			this.writeDebug('checkQueryStringFilters', arguments);
 
 			// Loop through the filters.
-			for(var key in filters) {
+			for (var key in filters) {
 				if (filters.hasOwnProperty(key)) {
 					var filterVal = this.getQueryString(key);
 
 					// Check for multiple values separated by comma.
-					if ( filterVal.indexOf( ',' ) !== -1 ) {
-						filterVal = filterVal.split( ',' );
+					if (filterVal.indexOf(',') !== -1) {
+						filterVal = filterVal.split(',');
 					}
 
 					// Only add the taxonomy id if it doesn't already exist
 					if (typeof filterVal !== 'undefined' && filterVal !== '' && filters[key].indexOf(filterVal) === -1) {
-						if ( Array.isArray( filterVal ) ) {
+						if (Array.isArray(filterVal)) {
 							filters[key] = filterVal;
 						} else {
 							filters[key] = [filterVal];
@@ -2170,12 +2251,11 @@
 					}
 
 					// Select the filters indicated in the query string.
-					if ( filters[key].length ) {
-						this.selectQueryStringFilters( key, filters[key] );
+					if (filters[key].length) {
+						this.selectQueryStringFilters(key, filters[key]);
 					}
 				}
 			}
-
 		},
 
 		/**
@@ -2184,7 +2264,7 @@
 		 * @param filterContainer {string} ID of the changed filter's container
 		 */
 		getFilterKey: function (filterContainer) {
-			this.writeDebug('getFilterKey',arguments);
+			this.writeDebug('getFilterKey', arguments);
 			for (var key in this.settings.taxonomyFilters) {
 				if (this.settings.taxonomyFilters.hasOwnProperty(key)) {
 					for (var i = 0; i < this.settings.taxonomyFilters[key].length; i++) {
@@ -2203,7 +2283,7 @@
 			this.writeDebug('taxonomyFiltersInit');
 
 			// Set up the filters
-			for(var key in this.settings.taxonomyFilters) {
+			for (var key in this.settings.taxonomyFilters) {
 				if (this.settings.taxonomyFilters.hasOwnProperty(key)) {
 					filters[key] = [];
 				}
@@ -2213,7 +2293,7 @@
 		/**
 		 * Taxonomy filtering
 		 */
-		taxonomyFiltering: function() {
+		taxonomyFiltering: function () {
 			this.writeDebug('taxonomyFiltering');
 			var _this = this;
 
@@ -2224,7 +2304,7 @@
 			_this.checkQueryStringFilters();
 
 			// Handle filter updates
-			$('.' + this.settings.taxonomyFiltersContainer).on('change.'+pluginName, 'input, select', function (e) {
+			$('.' + this.settings.taxonomyFiltersContainer).on('change.' + pluginName, 'input, select', function (e) {
 				e.stopPropagation();
 
 				var filterVal, filterContainer, filterKey;
@@ -2252,31 +2332,27 @@
 							}
 
 							if ($('#' + _this.settings.mapID).hasClass('bh-sl-map-open') === true) {
-								if ((olat) && (olng)) {
+								if (olat && olng) {
 									_this.settings.mapSettings.zoom = 0;
 									_this.processForm();
-								}
-								else {
+								} else {
 									_this.mapping(mappingObj);
 								}
 							}
-						}
-						else {
+						} else {
 							// Remove ids from the filter arrays as they are unchecked
 							var filterIndex = filters[filterKey].indexOf(filterVal);
 							if (filterIndex > -1) {
 								filters[filterKey].splice(filterIndex, 1);
 								if ($('#' + _this.settings.mapID).hasClass('bh-sl-map-open') === true) {
-									if ((olat) && (olng)) {
+									if (olat && olng) {
 										if (_this.countFilters() === 0) {
 											_this.settings.mapSettings.zoom = originalZoom;
-										}
-										else {
+										} else {
 											_this.settings.mapSettings.zoom = 0;
 										}
 										_this.processForm();
-									}
-									else {
+									} else {
 										_this.mapping(mappingObj);
 									}
 								}
@@ -2298,11 +2374,10 @@
 						if (filterKey) {
 							filters[filterKey] = [filterVal];
 							if ($('#' + _this.settings.mapID).hasClass('bh-sl-map-open') === true) {
-								if ((olat) && (olng)) {
+								if (olat && olng) {
 									_this.settings.mapSettings.zoom = 0;
 									_this.processForm();
-								}
-								else {
+								} else {
 									_this.mapping(mappingObj);
 								}
 							}
@@ -2314,11 +2389,10 @@
 							filters[filterKey] = [];
 						}
 						_this.reset();
-						if ((olat) && (olng)) {
+						if (olat && olng) {
 							_this.settings.mapSettings.zoom = originalZoom;
 							_this.processForm();
-						}
-						else {
+						} else {
 							_this.mapping(mappingObj);
 						}
 					}
@@ -2332,8 +2406,8 @@
 		 * @param markers {Object} Map markers
 		 * @param map {Object} Google map
 		 */
-		checkVisibleMarkers: function(markers, map) {
-			this.writeDebug('checkVisibleMarkers',arguments);
+		checkVisibleMarkers: function (markers, map) {
+			this.writeDebug('checkVisibleMarkers', arguments);
 			var _this = this;
 			var locations, listHtml;
 
@@ -2341,7 +2415,7 @@
 			$('.' + this.settings.locationList + ' ul').empty();
 
 			// Set up the new list
-			$(markers).each(function(x, marker){
+			$(markers).each(function (x, marker) {
 				if (map.getBounds().contains(marker.getPosition())) {
 					// Define the location data
 					_this.listSetup(marker, 0, 0);
@@ -2362,8 +2436,8 @@
 		 *
 		 * @param map {Object} Google map
 		 */
-		dragSearch: function(map) {
-			this.writeDebug('dragSearch',arguments);
+		dragSearch: function (map) {
+			this.writeDebug('dragSearch', arguments);
 			var newCenter = map.getCenter(),
 				newCenterCoords,
 				_this = this;
@@ -2377,7 +2451,7 @@
 			// Determine the new origin addresss
 			var newAddress = new this.reverseGoogleGeocode(this);
 			newCenterCoords = new google.maps.LatLng(mappingObj.lat, mappingObj.lng);
-			newAddress.geocode({'latLng': newCenterCoords}, function (data) {
+			newAddress.geocode({ latLng: newCenterCoords }, function (data) {
 				if (data !== null) {
 					mappingObj.origin = addressInput = data.address;
 					_this.mapping(mappingObj);
@@ -2391,10 +2465,10 @@
 		/**
 		 * Handle no results
 		 */
-		emptyResult: function() {
-			this.writeDebug('emptyResult',arguments);
+		emptyResult: function () {
+			this.writeDebug('emptyResult', arguments);
 			var center,
-				locList =  $('.' + this.settings.locationList + ' ul'),
+				locList = $('.' + this.settings.locationList + ' ul'),
 				myOptions = this.settings.mapSettings,
 				noResults;
 
@@ -2410,11 +2484,19 @@
 			locList.empty();
 
 			// Append the no results message
-			noResults = $('<li><div class="bh-sl-noresults-title">' + this.settings.noResultsTitle +  '</div><br><div class="bh-sl-noresults-desc">' + this.settings.noResultsDesc + '</li>').hide().fadeIn();
+			noResults = $(
+				'<li><div class="bh-sl-noresults-title">' +
+					this.settings.noResultsTitle +
+					'</div><br><div class="bh-sl-noresults-desc">' +
+					this.settings.noResultsDesc +
+					'</li>'
+			)
+				.hide()
+				.fadeIn();
 			locList.append(noResults);
 
 			// Center on the original origin or 0,0 if not available
-			if ((olat) && (olng)) {
+			if (olat && olng) {
 				center = new google.maps.LatLng(olat, olng);
 			} else {
 				center = new google.maps.LatLng(0, 0);
@@ -2427,7 +2509,6 @@
 			}
 		},
 
-
 		/**
 		 * Origin marker setup
 		 *
@@ -2435,8 +2516,8 @@
 		 * @param origin {string} Origin address
 		 * @param originPoint {Object} LatLng of origin point
 		 */
-		originMarker: function(map, origin, originPoint) {
-			this.writeDebug('originMarker',arguments);
+		originMarker: function (map, origin, originPoint) {
+			this.writeDebug('originMarker', arguments);
 
 			if (this.settings.originMarker !== true) {
 				return;
@@ -2449,21 +2530,19 @@
 				if (this.settings.originMarkerImg !== null) {
 					if (this.settings.originMarkerDim === null) {
 						originImg = this.markerImage(this.settings.originMarkerImg);
-					}
-					else {
+					} else {
 						originImg = this.markerImage(this.settings.originMarkerImg, this.settings.originMarkerDim.width, this.settings.originMarkerDim.height);
 					}
-				}
-				else {
+				} else {
 					originImg = {
 						url: 'https://mt.googleapis.com/vt/icon/name=icons/spotlight/spotlight-waypoint-a.png'
 					};
 				}
 
 				marker = new google.maps.Marker({
-					position : originPoint,
-					map      : map,
-					icon     : originImg,
+					position: originPoint,
+					map: map,
+					icon: originImg,
 					draggable: false
 				});
 			}
@@ -2472,7 +2551,7 @@
 		/**
 		 * Modal window setup
 		 */
-		modalWindow: function() {
+		modalWindow: function () {
 			this.writeDebug('modalWindow');
 
 			if (this.settings.modal !== true) {
@@ -2489,15 +2568,15 @@
 			// Pop up the modal window
 			$('.' + _this.settings.overlay).fadeIn();
 			// Close modal when close icon is clicked and when background overlay is clicked
-			$(document).on('click.'+pluginName, '.' + _this.settings.closeIcon + ', .' + _this.settings.overlay, function () {
+			$(document).on('click.' + pluginName, '.' + _this.settings.closeIcon + ', .' + _this.settings.overlay, function () {
 				_this.modalClose();
 			});
 			// Prevent clicks within the modal window from closing the entire thing
-			$(document).on('click.'+pluginName, '.' + _this.settings.modalWindow, function (e) {
+			$(document).on('click.' + pluginName, '.' + _this.settings.modalWindow, function (e) {
 				e.stopPropagation();
 			});
 			// Close modal when escape key is pressed
-			$(document).on('keyup.'+pluginName, function (e) {
+			$(document).on('keyup.' + pluginName, function (e) {
 				if (e.keyCode === 27) {
 					_this.modalClose();
 				}
@@ -2512,13 +2591,13 @@
 		 * @param storeStart {number} Starting point of current page when pagination is enabled
 		 * @param page {number} Current page number when pagination is enabled
 		 */
-		openNearestLocation: function(nearestLoc, infowindow, storeStart, page) {
-			this.writeDebug('openNearestLocation',arguments);
+		openNearestLocation: function (nearestLoc, infowindow, storeStart, page) {
+			this.writeDebug('openNearestLocation', arguments);
 
 			if (
 				this.settings.openNearest !== true ||
 				typeof nearestLoc === 'undefined' ||
-        typeof originalOrigin === 'undefined' ||
+				typeof originalOrigin === 'undefined' ||
 				(this.settings.fullMapStart === true && firstRun === true && this.settings.querystringParams === false) ||
 				(this.settings.defaultLoc === true && firstRun === true && this.settings.querystringParams === false)
 			) {
@@ -2532,7 +2611,7 @@
 				_this.settings.callbackNearestLoc.call(this, _this.map, nearestLoc, infowindow, storeStart, page);
 			}
 
-			var markerId = (nearestLoc.hasOwnProperty('markerid')) ? nearestLoc.markerid : 0;
+			var markerId = nearestLoc.hasOwnProperty('markerid') ? nearestLoc.markerid : 0;
 			var selectedMarker = markers[markerId];
 
 			_this.createInfowindow(selectedMarker, 'left', infowindow, storeStart, page);
@@ -2558,8 +2637,8 @@
 		 * @param storeStart {number} Starting point of current page when pagination is enabled
 		 * @param page {number} Current page number when pagination is enabled
 		 */
-		listClick: function(map, infowindow, storeStart, page) {
-			this.writeDebug('listClick',arguments);
+		listClick: function (map, infowindow, storeStart, page) {
+			this.writeDebug('listClick', arguments);
 			var _this = this;
 
 			$(document).on('click.' + pluginName, '.' + _this.settings.locationList + ' li', function () {
@@ -2586,7 +2665,7 @@
 			});
 
 			// Prevent bubbling from list content links
-			$(document).on('click.'+pluginName, '.' + _this.settings.locationList + ' li a', function(e) {
+			$(document).on('click.' + pluginName, '.' + _this.settings.locationList + ' li a', function (e) {
 				e.stopPropagation();
 			});
 		},
@@ -2596,8 +2675,8 @@
 		 *
 		 * @param locCount
 		 */
-		resultsTotalCount: function(locCount) {
-			this.writeDebug('resultsTotalCount',arguments);
+		resultsTotalCount: function (locCount) {
+			this.writeDebug('resultsTotalCount', arguments);
 
 			var $resultsContainer = $('.bh-sl-total-results');
 
@@ -2614,8 +2693,8 @@
 		 * @param map {Object} Google map
 		 * @param origin {string} Origin address
 		 */
-		inlineDirections: function(map, origin) {
-			this.writeDebug('inlineDirections',arguments);
+		inlineDirections: function (map, origin) {
+			this.writeDebug('inlineDirections', arguments);
 
 			if (this.settings.inlineDirections !== true || typeof origin === 'undefined') {
 				return;
@@ -2624,13 +2703,13 @@
 			var _this = this;
 
 			// Open directions
-			$(document).on('click.'+pluginName, '.' + _this.settings.locationList + ' li .loc-directions a', function (e) {
+			$(document).on('click.' + pluginName, '.' + _this.settings.locationList + ' li .loc-directions a', function (e) {
 				e.preventDefault();
 				var locID = $(this).closest('li').attr('data-markerid');
 				_this.directionsRequest(origin, parseInt(locID), map);
 
 				// Close directions
-				$(document).on('click.'+pluginName, '.' + _this.settings.locationList + ' .bh-sl-close-icon', function () {
+				$(document).on('click.' + pluginName, '.' + _this.settings.locationList + ' .bh-sl-close-icon', function () {
 					_this.closeDirections();
 				});
 			});
@@ -2642,8 +2721,8 @@
 		 * @param map {Object} Google map
 		 * @param markers {Object} Map markers
 		 */
-		visibleMarkersList: function(map, markers) {
-			this.writeDebug('visibleMarkersList',arguments);
+		visibleMarkersList: function (map, markers) {
+			this.writeDebug('visibleMarkersList', arguments);
 
 			if (this.settings.visibleMarkersList !== true) {
 				return;
@@ -2652,17 +2731,17 @@
 			var _this = this;
 
 			// Add event listener to filter the list when the map is fully loaded
-			google.maps.event.addListenerOnce(map, 'idle', function(){
+			google.maps.event.addListenerOnce(map, 'idle', function () {
 				_this.checkVisibleMarkers(markers, map);
 			});
 
 			// Add event listener for center change
-			google.maps.event.addListener(map, 'center_changed', function() {
+			google.maps.event.addListener(map, 'center_changed', function () {
 				_this.checkVisibleMarkers(markers, map);
 			});
 
 			// Add event listener for zoom change
-			google.maps.event.addListener(map, 'zoom_changed', function() {
+			google.maps.event.addListener(map, 'zoom_changed', function () {
 				_this.checkVisibleMarkers(markers, map);
 			});
 		},
@@ -2672,12 +2751,11 @@
 		 *
 		 * @returns {Array}
 		 */
-		featuredDistanceRestriction: function() {
-			this.writeDebug('featuredDistanceRestriction',arguments);
+		featuredDistanceRestriction: function () {
+			this.writeDebug('featuredDistanceRestriction', arguments);
 			var _this = this;
 
 			featuredset = $.grep(featuredset, function (val) {
-
 				if (val.hasOwnProperty('distance')) {
 					return parseFloat(val.distance) <= parseFloat(_this.settings.featuredDistance);
 				}
@@ -2691,8 +2769,8 @@
 		 *
 		 * @returns {Array}
 		 */
-		featuredRestrictions: function(mappingObject) {
-			this.writeDebug('featuredRestrictions',arguments);
+		featuredRestrictions: function (mappingObject) {
+			this.writeDebug('featuredRestrictions', arguments);
 
 			if (this.settings.featuredDistance === null) {
 				return featuredset;
@@ -2700,7 +2778,7 @@
 
 			// Featured locations radius restriction.
 			if (this.settings.featuredDistance !== null) {
-					featuredset = this.featuredDistanceRestriction(mappingObject);
+				featuredset = this.featuredDistanceRestriction(mappingObject);
 			}
 
 			return featuredset;
@@ -2713,7 +2791,7 @@
 		 *     distance, page
 		 */
 		mapping: function (mappingObject) {
-			this.writeDebug('mapping',arguments);
+			this.writeDebug('mapping', arguments);
 			var _this = this;
 			var orig_lat, orig_lng, geocodeData, origin, originPoint, page;
 			if (!this.isEmptyObject(mappingObject)) {
@@ -2725,8 +2803,8 @@
 			}
 
 			// Set the initial page to zero if not set
-			if ( _this.settings.pagination === true ) {
-				if (typeof page === 'undefined' || originalOrigin !== addressInput ) {
+			if (_this.settings.pagination === true) {
+				if (typeof page === 'undefined' || originalOrigin !== addressInput) {
 					page = 0;
 				}
 			}
@@ -2734,17 +2812,15 @@
 			// Data request
 			if (typeof origin === 'undefined' && this.settings.nameSearch === true) {
 				dataRequest = _this._getData();
-			}
-			else {
+			} else {
 				// Setup the origin point
 				originPoint = new google.maps.LatLng(orig_lat, orig_lng);
 
 				// If the origin hasn't changed use the existing data so we aren't making unneeded AJAX requests
-				if ((typeof originalOrigin !== 'undefined') && (origin === originalOrigin) && (typeof originalData !== 'undefined')) {
+				if (typeof originalOrigin !== 'undefined' && origin === originalOrigin && typeof originalData !== 'undefined') {
 					origin = originalOrigin;
 					dataRequest = originalData;
-				}
-				else {
+				} else {
 					// Do the data request - doing this in mapping so the lat/lng and address can be passed over and used if needed
 					dataRequest = _this._getData(olat, olng, origin, geocodeData, mappingObject);
 				}
@@ -2758,7 +2834,7 @@
 			 * Process the location data
 			 */
 			// Raw data
-			if ( _this.settings.dataRaw !== null ) {
+			if (_this.settings.dataRaw !== null) {
 				_this.processData(mappingObject, originPoint, dataRequest, page);
 			}
 			// Remote data
@@ -2772,7 +2848,7 @@
 		/**
 		 * Disable input fields that aren't available within the current location set
 		 */
-		maybeDisableFilterOptions: function() {
+		maybeDisableFilterOptions: function () {
 			this.writeDebug('maybeDisableFilterOptions');
 			var availableValues = [];
 			var _this = this;
@@ -2782,7 +2858,7 @@
 				if (this.settings.taxonomyFilters.hasOwnProperty(taxKey)) {
 					for (var x = 0; x < this.settings.taxonomyFilters[taxKey].length; x++) {
 						$('#' + this.settings.taxonomyFilters[taxKey] + ' input,option').each(function () {
-							var disabled = $(this).attr('disabled')
+							var disabled = $(this).attr('disabled');
 
 							if (typeof disabled !== 'undefined') {
 								$(this).removeAttr('disabled');
@@ -2847,10 +2923,23 @@
 		 * @param page {number} current page number
 		 */
 		processData: function (mappingObject, originPoint, data, page) {
-			this.writeDebug('processData',arguments);
+			this.writeDebug('processData', arguments);
 			var _this = this;
 			var i = 0;
-			var orig_lat, orig_lng, origin, name, maxDistance, marker, bounds, storeStart, storeNumToShow, myOptions, distError, openMap, infowindow, nearestLoc;
+			var orig_lat,
+				orig_lng,
+				origin,
+				name,
+				maxDistance,
+				marker,
+				bounds,
+				storeStart,
+				storeNumToShow,
+				myOptions,
+				distError,
+				openMap,
+				infowindow,
+				nearestLoc;
 			var taxFilters = {};
 			var $lengthSwap = $('#' + _this.settings.lengthSwapID);
 
@@ -2864,11 +2953,11 @@
 
 			var $mapDiv = $('#' + _this.settings.mapID);
 			// Get the length unit
-			var distUnit = (_this.settings.lengthUnit === 'km') ? _this.settings.kilometersLang : _this.settings.milesLang;
+			var distUnit = _this.settings.lengthUnit === 'km' ? _this.settings.kilometersLang : _this.settings.milesLang;
 
 			// Save data and origin separately so we can potentially avoid multiple AJAX requests
 			originalData = dataRequest;
-			if ( typeof origin !== 'undefined' ) {
+			if (typeof origin !== 'undefined') {
 				originalOrigin = origin;
 			}
 
@@ -2881,14 +2970,13 @@
 
 			// Set a variable for fullMapStart so we can detect the first run
 			if (
-				( _this.settings.fullMapStart === true && openMap === false ) ||
-				( _this.settings.autoGeocode === true && openMap === false ) ||
-				( _this.settings.defaultLoc === true && openMap === false ) ||
+				(_this.settings.fullMapStart === true && openMap === false) ||
+				(_this.settings.autoGeocode === true && openMap === false) ||
+				(_this.settings.defaultLoc === true && openMap === false) ||
 				reload === true
 			) {
 				firstRun = true;
-			}
-			else {
+			} else {
 				_this.reset();
 			}
 
@@ -2896,9 +2984,8 @@
 
 			// Process the location data depending on the data format type
 			if (_this.settings.dataType === 'json' || _this.settings.dataType === 'jsonp') {
-
 				// Process JSON
-				for(var x = 0; i < data.length; x++){
+				for (var x = 0; i < data.length; x++) {
 					var obj = data[x];
 					var locationData = {};
 
@@ -2913,43 +3000,44 @@
 
 					i++;
 				}
-			}
-			else if (_this.settings.dataType === 'kml') {
+			} else if (_this.settings.dataType === 'kml') {
 				// Process KML
-				$(data).find('Placemark').each(function () {
-					var locationData = {
-						'name'       : $(this).find('name').text(),
-						'lat'        : $(this).find('coordinates').text().split(',')[1],
-						'lng'        : $(this).find('coordinates').text().split(',')[0],
-						'description': $(this).find('description').text()
-					};
+				$(data)
+					.find('Placemark')
+					.each(function () {
+						var locationData = {
+							name: $(this).find('name').text(),
+							lat: $(this).find('coordinates').text().split(',')[1],
+							lng: $(this).find('coordinates').text().split(',')[0],
+							description: $(this).find('description').text()
+						};
 
-					_this.locationsSetup(locationData, orig_lat, orig_lng, origin, maxDistance);
+						_this.locationsSetup(locationData, orig_lat, orig_lng, origin, maxDistance);
 
-					i++;
-				});
-			}
-			else {
+						i++;
+					});
+			} else {
 				// Process XML
-				$(data).find(_this.settings.xmlElement).each(function () {
-					var locationData = {};
+				$(data)
+					.find(_this.settings.xmlElement)
+					.each(function () {
+						var locationData = {};
 
-					for (var key in this.attributes) {
-						if (this.attributes.hasOwnProperty(key)) {
-							locationData[this.attributes[key].name] = this.attributes[key].value;
+						for (var key in this.attributes) {
+							if (this.attributes.hasOwnProperty(key)) {
+								locationData[this.attributes[key].name] = this.attributes[key].value;
+							}
 						}
-					}
 
-					_this.locationsSetup(locationData, orig_lat, orig_lng, origin, maxDistance);
+						_this.locationsSetup(locationData, orig_lat, orig_lng, origin, maxDistance);
 
-					i++;
-				});
+						i++;
+					});
 			}
 
 			// Name search - using taxonomy filter to handle
 			if (_this.settings.nameSearch === true) {
 				if (typeof searchInput !== 'undefined' && '' !== searchInput) {
-
 					if (_this.settings.nameAttribute.indexOf(',')) {
 						nameAttrs = _this.settings.nameAttribute.split(',');
 
@@ -2969,10 +3057,7 @@
 				}
 
 				// Check for a previous value.
-				if (
-					typeof searchInput !== 'undefined' &&
-					'' === searchInput
-				) {
+				if (typeof searchInput !== 'undefined' && '' === searchInput) {
 					if (typeof nameAttrs !== 'undefined') {
 						for (var pa = 0; pa < nameAttrs.length; pa++) {
 							if (nameAttrs[pa] in filters) {
@@ -2987,8 +3072,7 @@
 
 			// Taxonomy filtering setup
 			if (_this.settings.taxonomyFilters !== null || _this.settings.nameSearch === true) {
-
-				for(var k in filters) {
+				for (var k in filters) {
 					if (filters.hasOwnProperty(k) && filters[k].length > 0) {
 						// Let's use regex
 						for (var z = 0; z < filters[k].length; z++) {
@@ -3025,14 +3109,12 @@
 
 			// Sorting
 			if (_this.settings.sortBy !== null && typeof _this.settings.sortBy === 'object') {
-
 				// Sort the multi-dimensional array by distance to get the nearest location first when enabled
 				if (_this.settings.openNearest === true && typeof originalOrigin !== 'undefined') {
 					this.sortNumerically(locationset, true);
 
 					// Save the closest location to a variable for openNearest setting
 					if (typeof locationset[0] !== 'undefined') {
-
 						if (this.settings.sortBy.hasOwnProperty('order') && this.settings.sortBy.order.toString() === 'desc') {
 							nearestLoc = locationset[locationset.length - 1];
 						} else {
@@ -3055,15 +3137,13 @@
 						if (typeof locationset[0] === 'undefined' || locationset[0].distance > maxDistance) {
 							_this.notify(_this.settings.distanceErrorAlert + maxDistance + ' ' + distUnit);
 						}
-					}
-					else {
+					} else {
 						if (typeof locationset[0] !== 'undefined') {
 							if (_this.settings.distanceAlert !== -1 && locationset[0].distance > _this.settings.distanceAlert) {
 								_this.notify(_this.settings.distanceErrorAlert + _this.settings.distanceAlert + ' ' + distUnit);
 								distError = true;
 							}
-						}
-						else {
+						} else {
 							_this.emptyResult();
 							throw new Error('No locations found. Please check the dataLocation setting and path.');
 							return;
@@ -3079,12 +3159,11 @@
 
 			// Featured locations filtering
 			if (_this.settings.featuredLocations === true) {
-
 				// Create array for featured locations
 				featuredset = $.grep(locationset, function (val) {
-						if (val.hasOwnProperty('featured')) {
-								return val.featured === 'true';
-						}
+					if (val.hasOwnProperty('featured')) {
+						return val.featured === 'true';
+					}
 				});
 
 				// Featured location restrictions.
@@ -3133,36 +3212,40 @@
 			_this.modalWindow();
 
 			// Avoid error if number of locations is less than the default of 26
-			if (_this.settings.storeLimit === -1 || locationset.length < _this.settings.storeLimit || (this.settings.fullMapStart === true && firstRun === true && (!isNaN(this.settings.fullMapStartListLimit) || this.settings.fullMapStartListLimit > 26 || this.settings.fullMapStartListLimit === -1))) {
+			if (
+				_this.settings.storeLimit === -1 ||
+				locationset.length < _this.settings.storeLimit ||
+				(this.settings.fullMapStart === true &&
+					firstRun === true &&
+					(!isNaN(this.settings.fullMapStartListLimit) || this.settings.fullMapStartListLimit > 26 || this.settings.fullMapStartListLimit === -1))
+			) {
 				storeNum = locationset.length;
-			}
-			else {
+			} else {
 				storeNum = _this.settings.storeLimit;
 			}
 
-      // If fullMapStart is enabled and taxFilters is reset and name search and origin are empty, swap back to the original length.
-      if (
-        _this.settings.fullMapStart === true &&
-        _this.isEmptyObject(taxFilters) &&
-        (searchInput === '' || typeof searchInput === 'undefined') &&
-        (addressInput === '' || typeof addressInput === 'undefined')
-      ) {
-        storeNum = locationset.length;
-      }
+			// If fullMapStart is enabled and taxFilters is reset and name search and origin are empty, swap back to the original length.
+			if (
+				_this.settings.fullMapStart === true &&
+				_this.isEmptyObject(taxFilters) &&
+				(searchInput === '' || typeof searchInput === 'undefined') &&
+				(addressInput === '' || typeof addressInput === 'undefined')
+			) {
+				storeNum = locationset.length;
+			}
 
 			// If pagination is on, change the store limit to the setting and slice the locationset array
 			if (_this.settings.pagination === true) {
 				storeNumToShow = _this.settings.locationsPerPage;
 				storeStart = page * _this.settings.locationsPerPage;
 
-				if ( (storeStart + storeNumToShow) > locationset.length ) {
-					storeNumToShow = _this.settings.locationsPerPage - ((storeStart + storeNumToShow) - locationset.length);
+				if (storeStart + storeNumToShow > locationset.length) {
+					storeNumToShow = _this.settings.locationsPerPage - (storeStart + storeNumToShow - locationset.length);
 				}
 
 				locationset = locationset.slice(storeStart, storeStart + storeNumToShow);
 				storeNum = locationset.length;
-			}
-			else {
+			} else {
 				storeNumToShow = storeNum;
 				storeStart = 0;
 			}
@@ -3173,28 +3256,25 @@
 			// Google maps settings
 			if (
 				(_this.settings.fullMapStart === true && firstRun === true && _this.settings.querystringParams !== true) ||
-				(_this.settings.mapSettings.zoom === 0) ||
-				(typeof origin === 'undefined') ||
-				(distError === true) ||
-				((_this.settings.maxDistance === true && firstRun === false) && this.countFilters() > 0)
+				_this.settings.mapSettings.zoom === 0 ||
+				typeof origin === 'undefined' ||
+				distError === true ||
+				(_this.settings.maxDistance === true && firstRun === false && this.countFilters() > 0)
 			) {
 				myOptions = _this.settings.mapSettings;
 				bounds = new google.maps.LatLngBounds();
-			}
-			else if (_this.settings.pagination === true) {
+			} else if (_this.settings.pagination === true) {
 				// Update the map to focus on the first point in the new set
 				var nextPoint = new google.maps.LatLng(locationset[0].lat, locationset[0].lng);
 
 				if (page === 0) {
 					_this.settings.mapSettings.center = originPoint;
 					myOptions = _this.settings.mapSettings;
-				}
-				else {
+				} else {
 					_this.settings.mapSettings.center = nextPoint;
 					myOptions = _this.settings.mapSettings;
 				}
-			}
-			else {
+			} else {
 				_this.settings.mapSettings.center = originPoint;
 				myOptions = _this.settings.mapSettings;
 			}
@@ -3203,15 +3283,15 @@
 			_this.map = new google.maps.Map(document.getElementById(_this.settings.mapID), myOptions);
 
 			// Re-center the map when the browser is re-sized
-      window.addEventListener('resize', function() {
+			window.addEventListener('resize', function () {
 				var center = _this.map.getCenter();
 				google.maps.event.trigger(_this.map, 'resize');
 				_this.map.setCenter(center);
 			});
 
 			// Add map drag listener if setting is enabled and re-search on drag end
-			if (_this.settings.dragSearch === true ) {
-				_this.map.addListener('dragend', function() {
+			if (_this.settings.dragSearch === true) {
+				_this.map.addListener('dragend', function () {
 					_this.dragSearch(_this.map);
 				});
 			}
@@ -3225,7 +3305,7 @@
 			}
 
 			// Initialize the infowindow
-			if ( typeof InfoBubble !== 'undefined' && _this.settings.infoBubble !== null ) {
+			if (typeof InfoBubble !== 'undefined' && _this.settings.infoBubble !== null) {
 				var infoBubbleSettings = _this.settings.infoBubble;
 				infoBubbleSettings.map = _this.map;
 
@@ -3238,7 +3318,7 @@
 			_this.originMarker(_this.map, origin, originPoint);
 
 			// Handle pagination
-			$(document).on('click.'+pluginName, '.bh-sl-pagination li', function (e) {
+			$(document).on('click.' + pluginName, '.bh-sl-pagination li', function (e) {
 				e.preventDefault();
 				// Run paginationChange
 				_this.paginationChange($(this).attr('data-page'));
@@ -3253,8 +3333,7 @@
 
 				if (page > 0) {
 					letter = String.fromCharCode('A'.charCodeAt(0) + (storeStart + y));
-				}
-				else {
+				} else {
 					letter = String.fromCharCode('A'.charCodeAt(0) + y);
 				}
 
@@ -3276,10 +3355,10 @@
 
 				if (
 					(_this.settings.fullMapStart === true && firstRun === true && _this.settings.querystringParams !== true) ||
-					(_this.settings.mapSettings.zoom === 0) ||
-					(typeof origin === 'undefined') ||
-					(distError === true) ||
-					((_this.settings.maxDistance === true && firstRun === false) && this.countFilters() > 0)
+					_this.settings.mapSettings.zoom === 0 ||
+					typeof origin === 'undefined' ||
+					distError === true ||
+					(_this.settings.maxDistance === true && firstRun === false && this.countFilters() > 0)
 				) {
 					bounds.extend(point);
 				}
@@ -3290,15 +3369,15 @@
 			// Center and zoom if no origin or zoom was provided, or distance of first marker is greater than distanceAlert
 			if (
 				(_this.settings.fullMapStart === true && firstRun === true && _this.settings.querystringParams !== true) ||
-				(_this.settings.mapSettings.zoom === 0) ||
-				(typeof origin === 'undefined') ||
-				(distError === true) ||
-				((_this.settings.maxDistance === true && firstRun === false) && this.countFilters() > 0)
+				_this.settings.mapSettings.zoom === 0 ||
+				typeof origin === 'undefined' ||
+				distError === true ||
+				(_this.settings.maxDistance === true && firstRun === false && this.countFilters() > 0)
 			) {
 				_this.map.fitBounds(bounds);
 
 				// Prevent zooming in too far after fitBounds
-				var zoomListener = google.maps.event.addListener(_this.map, 'idle', function() {
+				var zoomListener = google.maps.event.addListener(_this.map, 'idle', function () {
 					if (_this.map.getZoom() > 16) {
 						_this.map.setZoom(16);
 					}
@@ -3307,7 +3386,7 @@
 			}
 
 			// Create the links that focus on the related marker
-			var locList =  $('.' + _this.settings.locationList + ' ul');
+			var locList = $('.' + _this.settings.locationList + ' ul');
 			locList.empty();
 
 			// Set up the location list markup
@@ -3333,7 +3412,7 @@
 			if ($lengthSwap.length) {
 				_this.lengthUnitSwap($lengthSwap);
 
-				$lengthSwap.on('change.'+pluginName, function (e) {
+				$lengthSwap.on('change.' + pluginName, function (e) {
 					e.stopPropagation();
 					_this.lengthUnitSwap($lengthSwap);
 				});
@@ -3343,7 +3422,7 @@
 			_this.openNearestLocation(nearestLoc, infowindow, storeStart, page);
 
 			// MarkerClusterer setup
-			if ( typeof MarkerClusterer !== 'undefined' && _this.settings.markerCluster !== null ) {
+			if (typeof MarkerClusterer !== 'undefined' && _this.settings.markerCluster !== null) {
 				var markerCluster = new MarkerClusterer(_this.map, markers, _this.settings.markerCluster);
 			}
 
@@ -3387,7 +3466,6 @@
 				this.writeDebug.apply(this, arguments);
 			}
 		}
-
 	});
 
 	// A really lightweight plugin wrapper around the constructor,
@@ -3395,7 +3473,7 @@
 	// public function (ie. a function whose name doesn't start
 	// with an underscore) to be called via the jQuery plugin,
 	// e.g. $(element).defaultPluginName('functionName', arg1, arg2)
-	$.fn[ pluginName ] = function (options) {
+	$.fn[pluginName] = function (options) {
 		var args = arguments;
 		// Is the first parameter an object (options), or was omitted, instantiate a new instance of the plugin
 		if (options === undefined || typeof options === 'object') {
@@ -3403,7 +3481,7 @@
 				// Only allow the plugin to be instantiated once, so we check that the element has no plugin instantiation yet
 				if (!$.data(this, 'plugin_' + pluginName)) {
 					// If it has no instance, create a new one, pass options to our plugin constructor, and store the plugin instance in the elements jQuery data object.
-					$.data(this, 'plugin_' + pluginName, new Plugin( this, options ));
+					$.data(this, 'plugin_' + pluginName, new Plugin(this, options));
 				}
 			});
 			// Treat this as a call to a public method
@@ -3416,9 +3494,8 @@
 
 				// Tests that there's already a plugin-instance and checks that the requested public method exists
 				if (instance instanceof Plugin && typeof instance[options] === 'function') {
-
 					// Call the method of our plugin instance, and pass it the supplied arguments.
-					returns = instance[options].apply( instance, Array.prototype.slice.call( args, 1 ) );
+					returns = instance[options].apply(instance, Array.prototype.slice.call(args, 1));
 				}
 
 				// Allow instances to be destroyed via the 'destroy' method
@@ -3431,6 +3508,4 @@
 			return returns !== undefined ? returns : this;
 		}
 	};
-
-
 })(jQuery, window, document);
