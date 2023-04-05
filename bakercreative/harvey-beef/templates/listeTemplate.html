@@ -1,0 +1,20 @@
+  {{#location}}
+    <li class="locator-list-item" data-markerid="{{markerid}}">
+      <div class="locator-list-item-cell">
+        <a href="{{directions}}" target="_blank" class="locator-cell-text link">{{name}}</a>
+      </div>
+      <div class="locator-list-item-cell">
+        <div class="locator-cell-text">{{location}}</div>
+      </div>
+      <div class="locator-list-item-cell">
+        <div class="locator-cell-text"{{products}}</div>
+      </div>
+      <div class="locator-list-item-cell last">
+        <a href="{{directions}}" target="_blank" class="locator-list-link w-inline-block">
+          <div class="locator-list-link-icon w-embed">
+            <span>&gt;</span>
+          </div>
+        </a>
+      </div>
+    </li>
+   {{/location}}
